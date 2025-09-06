@@ -385,7 +385,7 @@
 
             // Добавляем диагностическую информацию
             addMessage(`🔍 Отправляю запрос к: ${API_URL}/chat`, 'bot');
-            addMessage(`📝 Данные: ${JSON.stringify({text: message, user_id: userId, locale: 'RU'})}`, 'bot');
+            addMessage(`📝 Данные: ${JSON.stringify({text: message, user_id: String(userId), locale: 'RU'})}`, 'bot');
 
             try {
                 const response = await fetch(`${API_URL}/chat`, {
@@ -395,7 +395,7 @@
                     },
                     body: JSON.stringify({
                         text: message,
-                        user_id: userId,
+                        user_id: String(userId),
                         locale: 'RU'
                     })
                 });
