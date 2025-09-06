@@ -1,6 +1,6 @@
 # Railway configuration
 [build]
-builder = "dockerfile"
+builder = "nixpacks"
 
 [deploy]
 startCommand = "python main.py"
