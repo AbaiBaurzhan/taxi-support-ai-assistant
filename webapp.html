@@ -383,10 +383,6 @@
             // Показываем индикатор печати
             showTypingIndicator();
 
-            // Добавляем диагностическую информацию
-            addMessage(`🔍 Отправляю запрос к: ${API_URL}/chat`, 'bot');
-            addMessage(`📝 Данные: ${JSON.stringify({text: message, user_id: String(userId), locale: 'RU'})}`, 'bot');
-
             try {
                 const response = await fetch(`${API_URL}/chat`, {
                     method: 'POST',
@@ -400,16 +396,12 @@
                     })
                 });
 
-                addMessage(`📊 Статус ответа: ${response.status} ${response.statusText}`, 'bot');
-
                 if (!response.ok) {
                     const errorText = await response.text();
-                    addMessage(`❌ Ошибка сервера: ${errorText}`, 'bot');
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    throw new Error(`HTTP error! status: ${response.status}: ${errorText}`);
                 }
 
                 const data = await response.json();
-                addMessage(`✅ Получен ответ: ${JSON.stringify(data)}`, 'bot');
                 
                 // Скрываем индикатор печати
                 hideTypingIndicator();
@@ -505,19 +497,8 @@
                     });
                 }
                 
-                // Тестируем подключение к API
-                setTimeout(async () => {
-                    try {
-                        const testResponse = await fetch(`${API_URL}/health`);
-                        if (testResponse.ok) {
-                            showStatus('✅ API подключен', 'success');
-                        } else {
-                            showStatus('❌ API недоступен', 'error');
-                        }
-                    } catch (error) {
-                        showStatus('❌ Ошибка подключения к API', 'error');
-                    }
-                }, 1000);
+                // Показываем статус подключения
+                showStatus('Подключено к APARU', 'success');
             }
         });
     </script>
