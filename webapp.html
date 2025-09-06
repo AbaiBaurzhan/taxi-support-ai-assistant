@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Поддержка Такси</title>
+    <title>APARU - Поддержка</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         * {
@@ -14,237 +14,371 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--tg-theme-bg-color, #ffffff);
-            color: var(--tg-theme-text-color, #000000);
-            height: 100vh;
+            background: linear-gradient(135deg, #FF7F00 0%, #FFA500 100%);
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
         }
 
         .header {
-            background: var(--tg-theme-header-bg-color, #2481cc);
-            color: var(--tg-theme-header-text-color, #ffffff);
-            padding: 16px;
-            text-align: center;
-            font-weight: 600;
+            background: #FFFFFF;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo {
+            width: 40px;
+            height: 40px;
+            background: #FF7F00;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .logo::after {
+            content: '';
+            width: 20px;
+            height: 10px;
+            background: #FFFFFF;
+            border-radius: 0 0 10px 10px;
+            position: absolute;
+            bottom: 8px;
+        }
+
+        .brand-name {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333333;
+            letter-spacing: -0.5px;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: #666666;
+            margin-top: 2px;
         }
 
         .chat-container {
             flex: 1;
             display: flex;
             flex-direction: column;
+            max-width: 600px;
+            margin: 0 auto;
+            width: 100%;
+            background: #FFFFFF;
+            border-radius: 20px 20px 0 0;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.1);
             overflow: hidden;
+        }
+
+        .chat-header {
+            background: #FF7F00;
+            color: #FFFFFF;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .chat-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .chat-subtitle {
+            font-size: 14px;
+            opacity: 0.9;
         }
 
         .messages {
             flex: 1;
-            padding: 16px;
+            padding: 20px;
             overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
+            background: #F8F9FA;
+            min-height: 400px;
         }
 
         .message {
-            max-width: 80%;
-            padding: 12px 16px;
-            border-radius: 18px;
-            word-wrap: break-word;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
         }
 
         .message.user {
-            background: var(--tg-theme-button-color, #2481cc);
-            color: var(--tg-theme-button-text-color, #ffffff);
-            align-self: flex-end;
-            margin-left: auto;
+            flex-direction: row-reverse;
         }
 
-        .message.bot {
-            background: var(--tg-theme-secondary-bg-color, #f1f1f1);
-            color: var(--tg-theme-text-color, #000000);
-            align-self: flex-start;
-        }
-
-        .message.system {
-            background: var(--tg-theme-hint-color, #999999);
-            color: var(--tg-theme-secondary-bg-color, #ffffff);
-            align-self: center;
-            font-size: 12px;
-            max-width: 90%;
-        }
-
-        .input-container {
-            padding: 16px;
-            background: var(--tg-theme-secondary-bg-color, #f1f1f1);
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-
-        .input-field {
-            flex: 1;
-            padding: 12px 16px;
-            border: none;
-            border-radius: 20px;
-            background: var(--tg-theme-bg-color, #ffffff);
-            color: var(--tg-theme-text-color, #000000);
-            font-size: 16px;
-            outline: none;
-        }
-
-        .send-button {
-            background: var(--tg-theme-button-color, #2481cc);
-            color: var(--tg-theme-button-text-color, #ffffff);
-            border: none;
+        .message-avatar {
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
-            width: 44px;
-            height: 44px;
             display: flex;
             align-items: center;
             justify-content: center;
-            cursor: pointer;
-            font-size: 18px;
+            font-weight: bold;
+            font-size: 14px;
         }
 
-        .send-button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
+        .message.user .message-avatar {
+            background: #FF7F00;
+            color: #FFFFFF;
+        }
+
+        .message.bot .message-avatar {
+            background: #E9ECEF;
+            color: #333333;
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .message.user .message-content {
+            background: #FF7F00;
+            color: #FFFFFF;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.bot .message-content {
+            background: #FFFFFF;
+            color: #333333;
+            border: 1px solid #E9ECEF;
+            border-bottom-left-radius: 4px;
         }
 
         .quick-buttons {
-            padding: 8px 16px;
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
+            padding: 20px;
+            background: #FFFFFF;
+            border-top: 1px solid #E9ECEF;
         }
 
-        .quick-button {
-            background: var(--tg-theme-secondary-bg-color, #f1f1f1);
-            color: var(--tg-theme-text-color, #000000);
-            border: none;
-            border-radius: 16px;
-            padding: 8px 12px;
+        .quick-buttons-title {
             font-size: 14px;
-            cursor: pointer;
-            white-space: nowrap;
+            color: #666666;
+            margin-bottom: 15px;
+            text-align: center;
         }
 
-        .quick-button:hover {
-            background: var(--tg-theme-hint-color, #e0e0e0);
+        .buttons-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
         }
 
-        .loading {
-            display: none;
-            align-items: center;
-            gap: 8px;
+        .quick-btn {
+            background: #FFFFFF;
+            border: 2px solid #FF7F00;
+            color: #FF7F00;
             padding: 12px 16px;
-            color: var(--tg-theme-hint-color, #999999);
+            border-radius: 12px;
             font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
         }
 
-        .loading.show {
+        .quick-btn:hover {
+            background: #FF7F00;
+            color: #FFFFFF;
+            transform: translateY(-1px);
+        }
+
+        .input-container {
             display: flex;
+            gap: 10px;
+            align-items: center;
         }
 
-        .spinner {
-            width: 16px;
-            height: 16px;
-            border: 2px solid var(--tg-theme-hint-color, #999999);
-            border-top: 2px solid transparent;
+        .message-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #E9ECEF;
+            border-radius: 25px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s ease;
+        }
+
+        .message-input:focus {
+            border-color: #FF7F00;
+        }
+
+        .send-btn {
+            background: #FF7F00;
+            color: #FFFFFF;
+            border: none;
+            width: 45px;
+            height: 45px;
             border-radius: 50%;
-            animation: spin 1s linear infinite;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.2s ease;
         }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        .send-btn:hover {
+            background: #E66A00;
+            transform: scale(1.05);
+        }
+
+        .send-btn:disabled {
+            background: #CCCCCC;
+            cursor: not-allowed;
+            transform: none;
         }
 
         .typing-indicator {
             display: none;
-            padding: 12px 16px;
-            color: var(--tg-theme-hint-color, #999999);
-            font-style: italic;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
         }
 
-        .typing-indicator.show {
-            display: block;
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: #FF7F00;
+            border-radius: 50%;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+
+        .status-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #28A745;
+            color: #FFFFFF;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            z-index: 1000;
+            display: none;
+        }
+
+        .status-indicator.error {
+            background: #DC3545;
+        }
+
+        @media (max-width: 480px) {
+            .buttons-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .message-content {
+                max-width: 85%;
+            }
         }
     </style>
 </head>
 <body>
     <div class="header">
-        🚗 Поддержка Такси
+        <div class="logo"></div>
+        <div>
+            <div class="brand-name">APARU</div>
+            <div class="subtitle">Служба поддержки</div>
+        </div>
     </div>
 
     <div class="chat-container">
+        <div class="chat-header">
+            <div class="chat-title">🤖 ИИ-Ассистент</div>
+            <div class="chat-subtitle">Готов помочь с любыми вопросами</div>
+        </div>
+
         <div class="messages" id="messages">
-            <div class="message system">
-                👋 Добро пожаловать! Я помогу вам с вопросами по такси.
+            <div class="message bot">
+                <div class="message-avatar">🤖</div>
+                <div class="message-content">
+                    Привет! Я ИИ-ассистент APARU. Чем могу помочь?
+                </div>
             </div>
         </div>
 
-        <div class="quick-buttons" id="quickButtons">
-            <button class="quick-button" onclick="sendQuickMessage('Где мой водитель?')">Где водитель?</button>
-            <button class="quick-button" onclick="sendQuickMessage('Пришлите чек')">Пришлите чек</button>
-            <button class="quick-button" onclick="sendQuickMessage('Как считается цена?')">Цена поездки</button>
-            <button class="quick-button" onclick="sendQuickMessage('Какие у меня карты?')">Мои карты</button>
-        </div>
-
-        <div class="loading" id="loading">
-            <div class="spinner"></div>
-            <span>Отправляю сообщение...</span>
-        </div>
-
-        <div class="typing-indicator" id="typingIndicator">
-            Бот печатает...
-        </div>
-
-        <div class="input-container">
-            <input 
-                type="text" 
-                class="input-field" 
-                id="messageInput" 
-                placeholder="Напишите ваш вопрос..."
-                onkeypress="handleKeyPress(event)"
-            >
-            <button class="send-button" id="sendButton" onclick="sendMessage()">
-                ➤
-            </button>
+        <div class="quick-buttons">
+            <div class="quick-buttons-title">Быстрые действия:</div>
+            <div class="buttons-grid">
+                <button class="quick-btn" onclick="sendQuickMessage('Где водитель?')">📍 Где водитель?</button>
+                <button class="quick-btn" onclick="sendQuickMessage('Пришлите чек')">🧾 Пришлите чек</button>
+                <button class="quick-btn" onclick="sendQuickMessage('Какие карты?')">💳 Мои карты</button>
+                <button class="quick-btn" onclick="sendQuickMessage('Как считается цена?')">💰 Цена поездки</button>
+            </div>
+            
+            <div class="input-container">
+                <input type="text" class="message-input" id="messageInput" placeholder="Напишите ваш вопрос..." maxlength="500">
+                <button class="send-btn" id="sendBtn" onclick="sendMessage()">➤</button>
+            </div>
         </div>
     </div>
 
+    <div class="typing-indicator" id="typingIndicator">
+        <div class="message-avatar">🤖</div>
+        <div class="typing-dots">
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+        </div>
+    </div>
+
+    <div class="status-indicator" id="statusIndicator"></div>
+
     <script>
-        // Инициализация Telegram WebApp
+        // API URL
+        const API_URL = 'https://taxi-support-ai-assistant-production.up.railway.app';
+
+        // Telegram WebApp
         const tg = window.Telegram.WebApp;
         tg.ready();
         tg.expand();
 
-        // Получение данных пользователя
-        const user = tg.initDataUnsafe?.user;
-        const userId = user?.id?.toString() || 'user_123';
-        const locale = user?.language_code || 'ru';
-
-        // API URL
-        const API_URL = 'https://taxi-support-ai-assistant-production.up.railway.app';
+        // Получаем user_id из Telegram
+        const userId = tg.initDataUnsafe?.user?.id || 'demo_user';
 
         // Элементы DOM
         const messagesContainer = document.getElementById('messages');
         const messageInput = document.getElementById('messageInput');
-        const sendButton = document.getElementById('sendButton');
-        const loading = document.getElementById('loading');
+        const sendBtn = document.getElementById('sendBtn');
         const typingIndicator = document.getElementById('typingIndicator');
+        const statusIndicator = document.getElementById('statusIndicator');
 
         // Отправка сообщения
         async function sendMessage() {
-            const text = messageInput.value.trim();
-            if (!text) return;
+            const message = messageInput.value.trim();
+            if (!message) return;
 
             // Добавляем сообщение пользователя
-            addMessage(text, 'user');
+            addMessage(message, 'user');
             messageInput.value = '';
-            sendButton.disabled = true;
-            loading.classList.add('show');
+            sendBtn.disabled = true;
+
+            // Показываем индикатор печати
+            showTypingIndicator();
 
             try {
                 const response = await fetch(`${API_URL}/chat`, {
@@ -253,9 +387,9 @@
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        text: text,
+                        message: message,
                         user_id: userId,
-                        locale: locale
+                        locale: 'RU'
                     })
                 });
 
@@ -265,28 +399,28 @@
 
                 const data = await response.json();
                 
-                // Показываем индикатор печати
-                loading.classList.remove('show');
-                typingIndicator.classList.add('show');
+                // Скрываем индикатор печати
+                hideTypingIndicator();
                 
-                // Имитируем задержку печати
-                setTimeout(() => {
-                    typingIndicator.classList.remove('show');
-                    addMessage(data.response, 'bot');
-                }, 1000 + Math.random() * 1000);
+                // Добавляем ответ бота
+                addMessage(data.response, 'bot');
+                
+                // Показываем статус
+                showStatus('Сообщение отправлено', 'success');
 
             } catch (error) {
                 console.error('Error:', error);
-                loading.classList.remove('show');
-                addMessage('Извините, произошла ошибка. Попробуйте позже.', 'bot');
+                hideTypingIndicator();
+                addMessage('Извините, произошла ошибка. Попробуйте еще раз.', 'bot');
+                showStatus('Ошибка отправки', 'error');
             } finally {
-                sendButton.disabled = false;
+                sendBtn.disabled = false;
             }
         }
 
         // Быстрые сообщения
-        function sendQuickMessage(text) {
-            messageInput.value = text;
+        function sendQuickMessage(message) {
+            messageInput.value = message;
             sendMessage();
         }
 
@@ -294,22 +428,56 @@
         function addMessage(text, sender) {
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${sender}`;
-            messageDiv.textContent = text;
+            
+            const avatar = sender === 'user' ? '👤' : '🤖';
+            messageDiv.innerHTML = `
+                <div class="message-avatar">${avatar}</div>
+                <div class="message-content">${text}</div>
+            `;
+            
             messagesContainer.appendChild(messageDiv);
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
 
-        // Обработка нажатия Enter
-        function handleKeyPress(event) {
-            if (event.key === 'Enter') {
-                sendMessage();
-            }
+        // Показать индикатор печати
+        function showTypingIndicator() {
+            typingIndicator.style.display = 'flex';
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
 
-        // Приветственное сообщение
-        setTimeout(() => {
-            addMessage('Привет! Чем могу помочь?', 'bot');
-        }, 1000);
+        // Скрыть индикатор печати
+        function hideTypingIndicator() {
+            typingIndicator.style.display = 'none';
+        }
+
+        // Показать статус
+        function showStatus(message, type = 'success') {
+            statusIndicator.textContent = message;
+            statusIndicator.className = `status-indicator ${type}`;
+            statusIndicator.style.display = 'block';
+            
+            setTimeout(() => {
+                statusIndicator.style.display = 'none';
+            }, 3000);
+        }
+
+        // Обработка Enter
+        messageInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // Обработка изменения ввода
+        messageInput.addEventListener('input', function() {
+            sendBtn.disabled = !this.value.trim();
+        });
+
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', function() {
+            messageInput.focus();
+            showStatus('Подключено к APARU', 'success');
+        });
     </script>
 </body>
 </html>
