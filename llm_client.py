@@ -2,29 +2,19 @@ import json
 import logging
 import requests
 from typing import Dict, Any, Optional
-from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM
-import torch
 
 logger = logging.getLogger(__name__)
 
 class LLMClient:
-    def __init__(self, model_name: str = "microsoft/DialoGPT-medium", use_ollama: bool = True):
+    def __init__(self, model_name: str = "llama2", use_ollama: bool = True):
         self.use_ollama = use_ollama
         self.model_name = model_name
         
         if use_ollama:
             self.ollama_url = "http://localhost:11434/api/generate"
-            self.model_name = "llama2"  # или другая модель в Ollama
         else:
-            # Используем transformers для локальной модели
-            self.device = "cuda" if torch.cuda.is_available() else "cpu"
-            self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-            self.model = AutoModelForCausalLM.from_pretrained(model_name)
-            self.model.to(self.device)
-            
-            # Добавляем pad_token если его нет
-            if self.tokenizer.pad_token is None:
-                self.tokenizer.pad_token = self.tokenizer.eos_token
+            # Fallback to simple responses without heavy ML libraries
+            logger.warning("Heavy ML libraries not available, using fallback responses")
 
     def generate_response(self, prompt: str, max_length: int = 200) -> str:
         """Генерирует ответ от LLM модели"""
@@ -32,7 +22,7 @@ class LLMClient:
             if self.use_ollama:
                 return self._generate_with_ollama(prompt, max_length)
             else:
-                return self._generate_with_transformers(prompt, max_length)
+                return self._generate_fallback(prompt)
         except Exception as e:
             logger.error(f"Ошибка генерации ответа: {e}")
             return "Извините, произошла ошибка при генерации ответа."
@@ -58,33 +48,22 @@ class LLMClient:
             
         except requests.exceptions.RequestException as e:
             logger.error(f"Ошибка запроса к Ollama: {e}")
-            return "Сервис временно недоступен. Попробуйте позже."
+            return self._generate_fallback(prompt)
 
-    def _generate_with_transformers(self, prompt: str, max_length: int) -> str:
-        """Генерация через transformers"""
-        try:
-            inputs = self.tokenizer.encode(prompt, return_tensors="pt").to(self.device)
-            
-            with torch.no_grad():
-                outputs = self.model.generate(
-                    inputs,
-                    max_length=max_length,
-                    num_return_sequences=1,
-                    temperature=0.7,
-                    do_sample=True,
-                    pad_token_id=self.tokenizer.eos_token_id,
-                    eos_token_id=self.tokenizer.eos_token_id
-                )
-            
-            response = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-            # Убираем исходный промпт из ответа
-            response = response[len(prompt):].strip()
-            
-            return response if response else "Не удалось сгенерировать ответ."
-            
-        except Exception as e:
-            logger.error(f"Ошибка генерации через transformers: {e}")
-            return "Ошибка при работе с моделью."
+    def _generate_fallback(self, prompt: str) -> str:
+        """Простой fallback без ML библиотек"""
+        prompt_lower = prompt.lower()
+        
+        if "цена" in prompt_lower or "стоимость" in prompt_lower:
+            return "Цена поездки рассчитывается на основе расстояния и времени. Базовый тариф 200 тенге + 50 тенге за км."
+        elif "промокод" in prompt_lower:
+            return "Промокод можно ввести при оформлении заказа в поле 'Промокод'."
+        elif "отменить" in prompt_lower:
+            return "Поездку можно отменить в течение 2 минут после заказа без штрафа."
+        elif "водитель" in prompt_lower:
+            return "Вы можете связаться с водителем через приложение или позвонить по номеру в деталях поездки."
+        else:
+            return "Спасибо за обращение! Если у вас есть конкретный вопрос, я помогу найти ответ."
 
     def create_taxi_context_prompt(self, user_message: str, intent: str, locale: str) -> str:
         """Создает контекстный промпт для такси-сервиса"""
