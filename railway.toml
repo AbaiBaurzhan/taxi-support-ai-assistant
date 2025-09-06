@@ -1,7 +1,6 @@
 # Railway configuration
 [build]
 builder = "dockerfile"
-path = "backend"
 
 [deploy]
 startCommand = "python main.py"
