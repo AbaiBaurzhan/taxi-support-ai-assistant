@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>APARU - Поддержка</title>
+    <title>APARU - Поддержка v2.1</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         * {
@@ -476,7 +476,13 @@
         // Инициализация
         document.addEventListener('DOMContentLoaded', function() {
             messageInput.focus();
-            showStatus('Подключено к APARU', 'success');
+            showStatus('Подключено к APARU v2.1', 'success');
+            
+            // Принудительно обновляем кэш Telegram
+            if (tg && tg.ready) {
+                tg.ready();
+                tg.expand();
+            }
         });
     </script>
 </body>
