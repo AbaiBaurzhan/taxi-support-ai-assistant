@@ -81,18 +81,50 @@ async def support_handler(message: types.Message):
 
 @dp.message()
 async def text_handler(message: types.Message):
-    """Обработчик текстовых сообщений - перенаправляет в WebApp"""
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(
-            text="💬 Открыть чат поддержки", 
-            web_app=WebAppInfo(url=f"{API_URL}/webapp")
-        )]
-    ])
-    
-    await message.answer(
-        f"💬 Для обработки вашего сообщения '{message.text}' откройте чат поддержки:",
-        reply_markup=keyboard
-    )
+    """Обработчик текстовых сообщений - обрабатывает через API"""
+    try:
+        # Показываем индикатор печати
+        await bot.send_chat_action(message.chat.id, "typing")
+        
+        # Отправляем запрос к API
+        import aiohttp
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                f"{API_URL}/chat",
+                json={
+                    "text": message.text,
+                    "user_id": str(message.from_user.id),
+                    "locale": message.from_user.language_code or "RU"
+                },
+                headers={"Content-Type": "application/json"}
+            ) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    response_text = data.get("response", "Извините, не удалось получить ответ.")
+                    
+                    # Добавляем информацию об источнике ответа
+                    source = data.get("source", "unknown")
+                    if source == "kb":
+                        response_text += "\n\n📚 Ответ из базы знаний"
+                    elif source == "llm":
+                        response_text += "\n\n🤖 Ответ от ИИ"
+                    
+                    await message.answer(response_text)
+                else:
+                    await message.answer("Извините, произошла ошибка при обработке запроса.")
+                    
+    except Exception as e:
+        logger.error(f"Ошибка обработки сообщения: {e}")
+        await message.answer("Извините, произошла ошибка. Попробуйте позже.")
+        
+        # Предлагаем открыть WebApp как альтернативу
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(
+                text="💬 Открыть чат поддержки", 
+                web_app=WebAppInfo(url=f"{API_URL}/webapp")
+            )]
+        ])
+        await message.answer("Или попробуйте открыть чат поддержки:", reply_markup=keyboard)
 
 async def main():
     """Запуск бота"""
