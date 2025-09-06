@@ -35,8 +35,9 @@
         .logo {
             width: 40px;
             height: 40px;
-            background: #FF7F00;
-            border-radius: 12px;
+            background: #FFFFFF;
+            border: 2px solid #FFFFFF;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -46,21 +47,19 @@
         .logo::before {
             content: '';
             position: absolute;
-            right: -6px;
-            bottom: 8px;
-            width: 0;
-            height: 0;
-            border-left: 8px solid #FF7F00;
-            border-top: 6px solid transparent;
-            border-bottom: 6px solid transparent;
+            width: 32px;
+            height: 32px;
+            background: #FF7F00;
+            border-radius: 50% 50% 50% 20%;
+            transform: rotate(-5deg);
         }
 
         .logo::after {
             content: '';
-            width: 16px;
-            height: 8px;
+            width: 14px;
+            height: 7px;
             background: #FFFFFF;
-            border-radius: 0 0 8px 8px;
+            border-radius: 0 0 7px 7px;
             position: absolute;
             bottom: 8px;
             left: 50%;
