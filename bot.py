@@ -24,7 +24,7 @@ async def start_handler(message: types.Message):
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(
             text="🚗 Открыть поддержку", 
-            web_app=WebAppInfo(url=f"{API_URL}/webapp?v=2.1")
+            web_app=WebAppInfo(url=f"{API_URL}/webapp?v=2.2")
         )]
     ])
     
@@ -70,7 +70,7 @@ async def support_handler(message: types.Message):
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(
             text="💬 Открыть чат поддержки", 
-            web_app=WebAppInfo(url=f"{API_URL}/webapp?v=2.1")
+            web_app=WebAppInfo(url=f"{API_URL}/webapp?v=2.2")
         )]
     ])
     
@@ -121,7 +121,7 @@ async def text_handler(message: types.Message):
         keyboard = InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(
                 text="💬 Открыть чат поддержки", 
-                web_app=WebAppInfo(url=f"{API_URL}/webapp?v=2.1")
+                web_app=WebAppInfo(url=f"{API_URL}/webapp?v=2.2")
             )]
         ])
         await message.answer("Или попробуйте открыть чат поддержки:", reply_markup=keyboard)
