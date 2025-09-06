@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 BOT_TOKEN = os.getenv("BOT_TOKEN", "YOUR_BOT_TOKEN_HERE")
 
 # URL вашего FastAPI сервера
-API_URL = os.getenv("API_URL", "http://localhost:8000")
+API_URL = os.getenv("API_URL", "https://taxi-support-ai-assistant-production.up.railway.app")
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
