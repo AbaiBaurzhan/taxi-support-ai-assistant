@@ -7,3 +7,4 @@ transformers>=4.36.0
 torch>=2.6.0
 ollama>=0.1.7
 python-multipart>=0.0.6
+aiogram>=3.0.0
