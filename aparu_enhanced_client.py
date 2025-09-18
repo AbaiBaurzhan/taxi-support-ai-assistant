@@ -76,11 +76,28 @@ class APARUEnhancedClient:
     def _generate_with_aparu_model(self, prompt: str, max_length: int) -> str:
         """Генерация с использованием обученной модели APARU"""
         try:
-            # Если есть база знаний, ищем релевантную информацию
+            # Сначала пытаемся найти ответ в базе знаний
+            user_question = self._extract_question_from_prompt(prompt)
+            if user_question:
+                # Используем финальную систему поиска
+                try:
+                    from final_working_search import FinalWorkingSearch
+                    
+                    if not hasattr(self, 'final_search'):
+                        self.final_search = FinalWorkingSearch()
+                        self.final_search.load_knowledge_base()
+                    
+                    result = self.final_search.get_contextual_answer(user_question)
+                    
+                    if result['source'] == 'knowledge_base' and result['confidence'] > 0.4:
+                        logger.info(f"✅ Ответ из базы знаний: {result['answer'][:100]}...")
+                        return result['answer']
+                    
+                except ImportError:
+                    pass
+            
+            # Если не найден в базе знаний, используем обученную модель
             if self.knowledge_base:
-                # Извлекаем вопрос из промпта
-                user_question = self._extract_question_from_prompt(prompt)
-                
                 # Ищем похожие записи в базе знаний APARU
                 similar_items = self._search_aparu_knowledge(user_question)
                 
@@ -126,17 +143,17 @@ class APARUEnhancedClient:
         if not self.knowledge_base:
             return []
         
-        # Используем умную систему поиска
+        # Используем финальную рабочую систему поиска
         try:
-            from smart_context_search import SmartContextSearch
+            from final_working_search import FinalWorkingSearch
             
             # Создаем систему поиска (если еще не создана)
-            if not hasattr(self, 'smart_search'):
-                self.smart_search = SmartContextSearch()
-                self.smart_search.load_knowledge_base()
+            if not hasattr(self, 'final_search'):
+                self.final_search = FinalWorkingSearch()
+                self.final_search.load_knowledge_base()
             
             # Ищем похожие записи
-            results = self.smart_search.search(question, top_k=top_k)
+            results = self.final_search.search(question, top_k=top_k)
             
             # Преобразуем в нужный формат
             formatted_results = []
@@ -144,9 +161,7 @@ class APARUEnhancedClient:
                 formatted_results.append({
                     'question': result['question'],
                     'answer': result['answer'],
-                    'similarity_score': result['similarity_score'],
-                    'category': result.get('category', 'general'),
-                    'contexts': result.get('contexts', [])
+                    'similarity_score': result['similarity_score']
                 })
             
             return formatted_results

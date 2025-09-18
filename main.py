@@ -249,13 +249,21 @@ async def chat(request: ChatRequest):
     
     # Обработка по интенту
     if intent == "faq":
-        faq_result = search_faq(processed_text)
-        if faq_result:
-            response_text = faq_result["answer"]
-            source = "kb"
-            confidence = 0.9
-        else:
-            # Если не найден в FAQ, используем обученную модель APARU
+        # Сначала используем улучшенную систему поиска APARU
+        try:
+            from enhanced_aparu_search import get_enhanced_aparu_answer
+            response_text = get_enhanced_aparu_answer(processed_text)
+            
+            # Если система дала хороший ответ, используем его
+            if "извините" not in response_text.lower() and "не уверен" not in response_text.lower():
+                source = "kb"
+                confidence = 0.9
+            else:
+                # Если не найден, используем обученную модель
+                prompt = aparu_enhanced_client.create_aparu_context_prompt(processed_text, intent, final_locale)
+                response_text = aparu_enhanced_client.generate_response(prompt)
+        except ImportError:
+            # Fallback к обученной модели
             prompt = aparu_enhanced_client.create_aparu_context_prompt(processed_text, intent, final_locale)
             response_text = aparu_enhanced_client.generate_response(prompt)
     
