@@ -122,10 +122,41 @@ class APARUEnhancedClient:
         return prompt
     
     def _search_aparu_knowledge(self, question: str, top_k: int = 3) -> List[Dict]:
-        """Ищет похожие записи в базе знаний APARU"""
+        """Умный поиск в базе знаний APARU с пониманием контекста"""
         if not self.knowledge_base:
             return []
         
+        # Используем умную систему поиска
+        try:
+            from smart_context_search import SmartContextSearch
+            
+            # Создаем систему поиска (если еще не создана)
+            if not hasattr(self, 'smart_search'):
+                self.smart_search = SmartContextSearch()
+                self.smart_search.load_knowledge_base()
+            
+            # Ищем похожие записи
+            results = self.smart_search.search(question, top_k=top_k)
+            
+            # Преобразуем в нужный формат
+            formatted_results = []
+            for result in results:
+                formatted_results.append({
+                    'question': result['question'],
+                    'answer': result['answer'],
+                    'similarity_score': result['similarity_score'],
+                    'category': result.get('category', 'general'),
+                    'contexts': result.get('contexts', [])
+                })
+            
+            return formatted_results
+            
+        except ImportError:
+            # Fallback к простому поиску
+            return self._simple_search(question, top_k)
+    
+    def _simple_search(self, question: str, top_k: int = 3) -> List[Dict]:
+        """Простой поиск по ключевым словам (fallback)"""
         question_lower = question.lower()
         results = []
         
