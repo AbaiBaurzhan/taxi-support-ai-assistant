@@ -1,6 +1,7 @@
 import json
 import logging
 import requests
+import os
 from typing import Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
@@ -11,7 +12,14 @@ class LLMClient:
         self.model_name = model_name
         
         if use_ollama:
-            self.ollama_url = "http://localhost:11434/api/generate"
+            # Проверяем переменные окружения для внешнего LLM
+            self.llm_url = os.getenv("LLM_URL", "http://localhost:11434")
+            self.ollama_url = f"{self.llm_url}/api/generate"
+            self.llm_enabled = os.getenv("LLM_ENABLED", "true").lower() == "true"
+            
+            if not self.llm_enabled:
+                logger.warning("LLM отключен через переменную окружения")
+                self.use_ollama = False
         else:
             # Fallback to simple responses without heavy ML libraries
             logger.warning("Heavy ML libraries not available, using fallback responses")

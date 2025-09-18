@@ -10,7 +10,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from langdetect import detect
 from langdetect.lang_detect_exception import LangDetectException
-from llm_client import llm_client
+from aparu_enhanced_client import aparu_enhanced_client
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -58,6 +58,12 @@ def load_json_file(filename: str) -> Dict[str, Any]:
 # Глобальные данные
 fixtures = load_json_file("fixtures.json")
 kb_data = load_json_file("kb.json")
+
+# Загружаем базу знаний APARU
+if aparu_enhanced_client.load_aparu_knowledge_base():
+    logger.info("✅ База знаний APARU загружена")
+else:
+    logger.warning("⚠️ База знаний APARU не загружена, используется fallback")
 
 # Предобработка текста
 def preprocess_text(text: str) -> str:
@@ -249,9 +255,9 @@ async def chat(request: ChatRequest):
             source = "kb"
             confidence = 0.9
         else:
-            # Если не найден в FAQ, используем LLM
-            prompt = llm_client.create_taxi_context_prompt(processed_text, intent, final_locale)
-            response_text = llm_client.generate_response(prompt)
+            # Если не найден в FAQ, используем обученную модель APARU
+            prompt = aparu_enhanced_client.create_aparu_context_prompt(processed_text, intent, final_locale)
+            response_text = aparu_enhanced_client.generate_response(prompt)
     
     elif intent == "ride_status":
         ride_data = get_ride_status(request.user_id)
@@ -287,9 +293,9 @@ async def chat(request: ChatRequest):
         confidence = 0.95
     
     else:
-        # Для неизвестных интентов используем LLM
-        prompt = llm_client.create_taxi_context_prompt(processed_text, intent, final_locale)
-        response_text = llm_client.generate_response(prompt)
+        # Для неизвестных интентов используем обученную модель APARU
+        prompt = aparu_enhanced_client.create_aparu_context_prompt(processed_text, intent, final_locale)
+        response_text = aparu_enhanced_client.generate_response(prompt)
     
     # Логирование
     logger.info(f"Response: {response_text[:100]}..., Source: {source}, Intent: {intent}, Confidence: {confidence}")

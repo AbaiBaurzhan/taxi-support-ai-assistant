@@ -1,0 +1,27 @@
+[
+  {
+    "question": "Что такое наценка?",
+    "answer": "Ошибка: HTTPConnectionPool(host='localhost', port=11434): Read timed out. (read timeout=30)",
+    "status": "error"
+  },
+  {
+    "question": "Как узнать расценку?",
+    "answer": "Ошибка: HTTPConnectionPool(host='localhost', port=11434): Read timed out. (read timeout=30)",
+    "status": "error"
+  },
+  {
+    "question": "Как пополнить баланс?",
+    "answer": "Ошибка: HTTPConnectionPool(host='localhost', port=11434): Read timed out. (read timeout=30)",
+    "status": "error"
+  },
+  {
+    "question": "Что такое моточасы?",
+    "answer": "Ошибка: HTTPConnectionPool(host='localhost', port=11434): Read timed out. (read timeout=30)",
+    "status": "error"
+  },
+  {
+    "question": "Как работает таксометр?",
+    "answer": "Ошибка: HTTPConnectionPool(host='localhost', port=11434): Read timed out. (read timeout=30)",
+    "status": "error"
+  }
+]
