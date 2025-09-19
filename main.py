@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-🚀 УЛУЧШЕННАЯ ИИ МОДЕЛЬ APARU
-Использует все доступные библиотеки для максимальной точности
+🚀 ФИНАЛЬНАЯ ГИБРИДНАЯ АРХИТЕКТУРА APARU AI
+LLM модель на ноутбуке + Railway проксирует запросы
 """
 
 import json
@@ -9,39 +9,35 @@ import re
 import logging
 from typing import Dict, Any, List, Optional
 from datetime import datetime
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
-import os
-
-# ML библиотеки
-import nltk
-from nltk.corpus import stopwords
-from nltk.stem import SnowballStemmer
-from fuzzywuzzy import fuzz, process
-import pandas as pd
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
-import numpy as np
+from langdetect import detect
+from langdetect.lang_detect_exception import LangDetectException
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Загружаем NLTK данные
+# ГИБРИДНАЯ СИСТЕМА: Локальная модель через ngrok + Railway прокси
 try:
-    nltk.data.find('corpora/stopwords')
-except LookupError:
-    nltk.download('stopwords')
+    from simple_hybrid_client import get_simple_hybrid_answer, simple_hybrid_client
+    logger.info("✅ Финальная гибридная система активирована")
+    HYBRID_MODE = True
+except ImportError:
+    try:
+        from enhanced_search_client import get_enhanced_answer as get_simple_hybrid_answer
+        logger.info("✅ Fallback к локальной системе поиска")
+        HYBRID_MODE = False
+    except ImportError:
+        logger.error("❌ Ни одна система поиска не доступна")
+        HYBRID_MODE = False
 
-try:
-    nltk.data.find('tokenizers/punkt')
-except LookupError:
-    nltk.download('punkt')
+app = FastAPI(title="APARU Final Hybrid AI Assistant", version="2.2.0")
 
-app = FastAPI(title="APARU Enhanced AI Assistant", version="3.0.0")
-
-# CORS
+# CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -50,7 +46,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Модели
+# Статические файлы
+app.mount("/static", StaticFiles(directory="."), name="static")
+
+# Модели данных
 class ChatRequest(BaseModel):
     text: str
     user_id: str
@@ -60,218 +59,122 @@ class ChatResponse(BaseModel):
     response: str
     intent: str
     confidence: float
-    source: str
+    source: str  # "hybrid", "local", "fallback"
     timestamp: str
-    suggestions: List[str] = []
+    architecture: str  # "hybrid" или "local"
 
 class HealthResponse(BaseModel):
     status: str
-    architecture: str = "enhanced"
+    architecture: str
+    ngrok_available: bool
     timestamp: str
 
-# Расширенная база знаний
-ENHANCED_KB = {
-    "наценка": {
-        "answer": "Здравствуйте. Наценка является частью тарифной системы Компании и её наличие регулируется объёмом спроса на рассматриваемый момент. В вашем случае наблюдался повышенный спрос на услуги из-за погодных условий. Данная мера необходима для привлечения дополнительных водителей на выполнение заказов, что в свою очередь сокращает время ожидания для вас. Стоимость оплаты поездки рассчитывается согласно показаниям таксометра. Благодарим за обращение! С уважением, команда АПАРУ.",
-        "keywords": ["наценка", "наценки", "наценку", "наценкой", "дорого", "подорожание", "повышение", "доплата", "почему так дорого", "откуда доплата", "повысили цену", "зачем доплачивать"],
-        "synonyms": ["дорого", "подорожание", "повышение", "доплата", "повысили", "подняли цену"],
-        "variations": ["наценкa", "наценкy", "наценкi", "наценкe", "наценкoй"]
-    },
-    "доставка": {
-        "answer": "Для заказа доставки через приложение APARU: 1) Откройте приложение 2) Выберите раздел 'Доставка' 3) Укажите адрес отправления и получения 4) Выберите тип доставки 5) Подтвердите заказ. Курьер свяжется с вами для уточнения деталей.",
-        "keywords": ["доставка", "доставки", "доставку", "доставкой", "курьер", "посылка", "отправить", "заказать", "доставить", "передать"],
-        "synonyms": ["курьер", "посылка", "отправить", "заказать", "доставить", "передать", "отправка"],
-        "variations": ["доставкy", "доставкa", "доставкi", "доставкe", "доставкoй"]
-    },
-    "баланс": {
-        "answer": "Для пополнения баланса в приложении APARU: 1) Откройте приложение 2) Перейдите в раздел 'Профиль' 3) Выберите 'Пополнить баланс' 4) Выберите способ оплаты 5) Введите сумму 6) Подтвердите операцию. Баланс пополнится в течение нескольких минут.",
-        "keywords": ["баланс", "баланса", "балансу", "балансом", "счет", "кошелек", "пополнить", "платеж", "деньги", "средства"],
-        "synonyms": ["счет", "кошелек", "пополнить", "платеж", "деньги", "средства", "финансы"],
-        "variations": ["балaнс", "балaнc", "балaнсу", "балaнсом", "балaнca"]
-    },
-    "приложение": {
-        "answer": "Если приложение APARU не работает: 1) Перезапустите приложение 2) Проверьте подключение к интернету 3) Обновите приложение до последней версии 4) Очистите кэш приложения 5) Переустановите приложение. Если проблема не решается, обратитесь в службу поддержки.",
-        "keywords": ["приложение", "приложения", "приложению", "приложением", "программа", "софт", "апп", "работать", "не работает", "глючит", "висит"],
-        "synonyms": ["программа", "софт", "апп", "работать", "не работает", "глючит", "висит", "тормозит"],
-        "variations": ["приложениe", "приложениa", "приложениy", "приложениi", "приложениoм"]
-    }
-}
+# Загрузка данных
+def load_json_file(filename: str) -> Dict[str, Any]:
+    try:
+        with open(filename, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        logger.error(f"Файл {filename} не найден")
+        return {}
+    except json.JSONDecodeError as e:
+        logger.error(f"Ошибка парсинга JSON в {filename}: {e}")
+        return {}
 
-class EnhancedAIModel:
-    def __init__(self):
-        self.stemmer = SnowballStemmer('russian')
-        self.stop_words = set(stopwords.words('russian'))
-        self.vectorizer = TfidfVectorizer(
-            max_features=1000,
-            stop_words=list(self.stop_words),
-            ngram_range=(1, 2)
-        )
-        self._prepare_knowledge_base()
-        
-    def _prepare_knowledge_base(self):
-        """Подготавливает базу знаний для поиска"""
-        self.questions = []
-        self.answers = []
-        self.categories = []
-        
-        for category, data in ENHANCED_KB.items():
-            # Основной вопрос
-            self.questions.append(f"Что такое {category}?")
-            self.answers.append(data["answer"])
-            self.categories.append(category)
-            
-            # Добавляем вариации вопросов
-            for keyword in data["keywords"]:
-                if keyword != category:  # Избегаем дублирования
-                    self.questions.append(f"Как {keyword}?")
-                    self.answers.append(data["answer"])
-                    self.categories.append(category)
-        
-        # Обучаем TF-IDF
-        self.tfidf_matrix = self.vectorizer.fit_transform(self.questions)
-        logger.info(f"✅ База знаний подготовлена: {len(self.questions)} вопросов")
-    
-    def normalize_text(self, text: str) -> str:
-        """Нормализует текст"""
-        # Убираем эмодзи и спецсимволы
-        text = re.sub(r'[^\w\s]', ' ', text.lower())
-        # Убираем лишние пробелы
-        text = re.sub(r'\s+', ' ', text).strip()
-        return text
-    
-    def find_best_match(self, query: str) -> Dict[str, Any]:
-        """Находит лучший ответ на вопрос"""
-        normalized_query = self.normalize_text(query)
-        
-        # 1. Прямой поиск по ключевым словам
-        direct_match = self._direct_search(normalized_query)
-        if direct_match["confidence"] > 0.8:
-            return direct_match
-        
-        # 2. Fuzzy поиск
-        fuzzy_match = self._fuzzy_search(normalized_query)
-        if fuzzy_match["confidence"] > 0.6:
-            return fuzzy_match
-        
-        # 3. TF-IDF поиск
-        tfidf_match = self._tfidf_search(normalized_query)
-        if tfidf_match["confidence"] > 0.5:
-            return tfidf_match
-        
-        # 4. Fallback
-        return {
-            "answer": "Извините, не могу найти ответ на ваш вопрос. Обратитесь в службу поддержки.",
-            "category": "unknown",
-            "confidence": 0.0,
-            "source": "fallback",
-            "suggestions": self._get_suggestions(normalized_query)
-        }
-    
-    def _direct_search(self, query: str) -> Dict[str, Any]:
-        """Прямой поиск по ключевым словам"""
-        for category, data in ENHANCED_KB.items():
-            # Проверяем основные ключевые слова
-            for keyword in data["keywords"]:
-                if keyword in query:
-                    return {
-                        "answer": data["answer"],
-                        "category": category,
-                        "confidence": 0.9,
-                        "source": "direct"
-                    }
-            
-            # Проверяем синонимы
-            for synonym in data["synonyms"]:
-                if synonym in query:
-                    return {
-                        "answer": data["answer"],
-                        "category": category,
-                        "confidence": 0.8,
-                        "source": "synonym"
-                    }
-            
-            # Проверяем вариации (опечатки)
-            for variation in data["variations"]:
-                if variation in query:
-                    return {
-                        "answer": data["answer"],
-                        "category": category,
-                        "confidence": 0.7,
-                        "source": "variation"
-                    }
-        
-        return {"confidence": 0.0}
-    
-    def _fuzzy_search(self, query: str) -> Dict[str, Any]:
-        """Fuzzy поиск"""
-        best_score = 0
-        best_match = None
-        
-        for category, data in ENHANCED_KB.items():
-            # Проверяем все ключевые слова
-            all_keywords = data["keywords"] + data["synonyms"] + data["variations"]
-            
-            for keyword in all_keywords:
-                score = fuzz.partial_ratio(query, keyword)
-                if score > best_score:
-                    best_score = score
-                    best_match = {
-                        "answer": data["answer"],
-                        "category": category,
-                        "confidence": score / 100,
-                        "source": "fuzzy"
-                    }
-        
-        return best_match if best_match and best_match["confidence"] > 0.6 else {"confidence": 0.0}
-    
-    def _tfidf_search(self, query: str) -> Dict[str, Any]:
-        """TF-IDF поиск"""
-        try:
-            query_vector = self.vectorizer.transform([query])
-            similarities = cosine_similarity(query_vector, self.tfidf_matrix).flatten()
-            
-            best_idx = np.argmax(similarities)
-            best_score = similarities[best_idx]
-            
-            if best_score > 0.3:
-                return {
-                    "answer": self.answers[best_idx],
-                    "category": self.categories[best_idx],
-                    "confidence": float(best_score),
-                    "source": "tfidf"
-                }
-        except Exception as e:
-            logger.error(f"Ошибка TF-IDF поиска: {e}")
-        
-        return {"confidence": 0.0}
-    
-    def _get_suggestions(self, query: str) -> List[str]:
-        """Получает предложения похожих вопросов"""
-        suggestions = []
-        
-        for category, data in ENHANCED_KB.items():
-            # Добавляем основные вопросы
-            suggestions.append(f"Что такое {category}?")
-            
-            # Добавляем популярные варианты
-            for keyword in data["keywords"][:3]:  # Только первые 3
-                if keyword != category:
-                    suggestions.append(f"Как {keyword}?")
-        
-        return suggestions[:5]  # Максимум 5 предложений
+# Глобальные данные
+fixtures = load_json_file("fixtures.json")
+kb_data = load_json_file("kb.json")
 
-# Глобальный экземпляр модели
-ai_model = EnhancedAIModel()
+# Предобработка текста
+def preprocess_text(text: str) -> str:
+    """Убирает эмодзи и спецсимволы"""
+    # Убираем эмодзи
+    emoji_pattern = re.compile("["
+        u"\U0001F600-\U0001F64F"  # emoticons
+        u"\U00002500-\U000025FF"  # Box Drawing & Block Elements
+        u"\U00002702-\U000027B0"  # Dingbats
+        u"\U000024C2-\U0001F251"
+        "]+", flags=re.UNICODE)
 
+    text = emoji_pattern.sub(r'', text)
+
+    # Убираем лишние пробелы
+    text = re.sub(r'\s+', ' ', text).strip()
+
+    return text
+
+# Определение языка
+def detect_language(text: str) -> str:
+    """Определяет язык текста"""
+    try:
+        lang = detect(text)
+        return lang if lang in ['ru', 'kz', 'en'] else 'ru'
+    except LangDetectException:
+        return 'ru'
+
+# Классификация намерений
+def classify_intent(text: str) -> str:
+    """Определяет намерение пользователя"""
+    text_lower = text.lower()
+
+    # Ключевые слова для разных намерений
+    faq_keywords = ['что', 'как', 'где', 'почему', 'зачем', 'когда', 'сколько', 'можно ли']
+    ride_status_keywords = ['водитель', 'машина', 'поездка', 'заказ', 'статус', 'где']
+    receipt_keywords = ['чек', 'счет', 'квитанция', 'документ']
+    cards_keywords = ['карта', 'карты', 'основная', 'платеж']
+    complaint_keywords = ['жалоба', 'проблема', 'не работает', 'плохо', 'списали', 'дважды']
+
+    if any(keyword in text_lower for keyword in faq_keywords):
+        return "faq"
+    elif any(keyword in text_lower for keyword in ride_status_keywords):
+        return "ride_status"
+    elif any(keyword in text_lower for keyword in receipt_keywords):
+        return "receipt"
+    elif any(keyword in text_lower for keyword in cards_keywords):
+        return "cards"
+    elif any(keyword in text_lower for keyword in complaint_keywords):
+        return "complaint"
+    else:
+        return "unknown"
+
+# Получение ответа от AI системы
+def get_ai_response(text: str) -> str:
+    """Получает ответ от AI системы"""
+    try:
+        if HYBRID_MODE:
+            # Используем гибридную систему
+            answer = get_simple_hybrid_answer(text)
+            logger.info("✅ Ответ получен от гибридной системы")
+        else:
+            # Fallback к локальной системе
+            answer = get_simple_hybrid_answer(text)
+            logger.info("✅ Ответ получен от локальной системы")
+        return answer
+    except Exception as e:
+        logger.error(f"Ошибка в AI системе: {e}")
+        return "Извините, произошла ошибка при обработке вашего запроса."
+
+# API эндпоинты
 @app.get("/")
 async def root():
-    return {"message": "APARU Enhanced AI Assistant", "status": "running", "version": "3.0.0"}
+    return {
+        "message": "APARU Final Hybrid AI Assistant", 
+        "architecture": "hybrid" if HYBRID_MODE else "local",
+        "version": "2.2.0"
+    }
 
 @app.get("/health", response_model=HealthResponse)
-async def health():
+async def health_check():
+    """Проверка состояния системы"""
+    ngrok_available = False
+
+    if HYBRID_MODE and 'simple_hybrid_client' in globals():
+        ngrok_available = simple_hybrid_client.ngrok_available
+
     return HealthResponse(
         status="healthy",
-        architecture="enhanced",
+        architecture="hybrid" if HYBRID_MODE else "local",
+        ngrok_available=ngrok_available,
         timestamp=datetime.now().isoformat()
     )
 
@@ -279,31 +182,70 @@ async def health():
 async def chat(request: ChatRequest):
     """Основной эндпоинт для чата"""
     try:
-        result = ai_model.find_best_match(request.text)
-        
+        # Предобработка текста
+        processed_text = preprocess_text(request.text)
+
+        # Определение языка
+        detected_lang = detect_language(processed_text)
+
+        # Определяем намерение
+        intent = classify_intent(processed_text)
+
+        # Обрабатываем запрос в зависимости от намерения
+        if intent == "faq":
+            response_text = get_ai_response(processed_text)
+            source = "hybrid" if HYBRID_MODE else "local"
+        elif intent == "ride_status":
+            # Моковые данные для статуса поездки
+            ride_data = fixtures.get("rides", [{}])[0]
+            response_text = f"Ваш водитель {ride_data.get('driver_name', 'Алексей')} находится в {ride_data.get('location', '5 минутах')} от вас. Номер машины: {ride_data.get('car_number', '123ABC')}"
+            source = "mock"
+        elif intent == "receipt":
+            # Моковые данные для чека
+            receipt_data = fixtures.get("receipts", [{}])[0]
+            response_text = f"Чек отправлен на email {receipt_data.get('email', 'user@example.com')}. Сумма: {receipt_data.get('amount', '500')} тенге"
+            source = "mock"
+        elif intent == "cards":
+            # Моковые данные для карт
+            cards_data = fixtures.get("cards", [])
+            if cards_data:
+                response_text = f"У вас {len(cards_data)} карт. Основная карта: {cards_data[0].get('number', '****1234')}"
+            else:
+                response_text = "У вас нет сохраненных карт"
+            source = "mock"
+        elif intent == "complaint":
+            # Создание тикета
+            ticket_id = f"TICKET-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
+            response_text = f"Ваша жалоба зарегистрирована. Номер тикета: {ticket_id}. Оператор свяжется с вами в течение 24 часов."
+            source = "ticket"
+        else:
+            # Неизвестное намерение - используем AI
+            response_text = get_ai_response(processed_text)
+            source = "hybrid" if HYBRID_MODE else "local"
+
         return ChatResponse(
-            response=result["answer"],
-            intent=result["category"],
-            confidence=result["confidence"],
-            source=result["source"],
+            response=response_text,
+            intent=intent,
+            confidence=0.9 if source in ["hybrid", "local"] else 1.0,
+            source=source,
             timestamp=datetime.now().isoformat(),
-            suggestions=result.get("suggestions", [])
+            architecture="hybrid" if HYBRID_MODE else "local"
         )
-    
+
     except Exception as e:
         logger.error(f"Ошибка в /chat: {e}")
-        return ChatResponse(
-            response="Извините, произошла ошибка при обработке вашего запроса.",
-            intent="error",
-            confidence=0.0,
-            source="error",
-            timestamp=datetime.now().isoformat(),
-            suggestions=[]
-        )
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/webapp")
+async def webapp():
+    """Возвращает веб-приложение"""
+    return FileResponse("webapp.html")
+
+@app.get("/fixtures")
+async def get_fixtures():
+    """Возвращает моковые данные"""
+    return fixtures
 
 if __name__ == "__main__":
     import uvicorn
-    
-    # Railway использует переменную PORT
-    port = int(os.environ.get("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
