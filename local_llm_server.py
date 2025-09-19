@@ -218,6 +218,6 @@ async def chat(request: ChatRequest):
 if __name__ == "__main__":
     import uvicorn
     
-    # Локальный сервер на порту 8001
+    # Локальный сервер на порту 8001, доступный извне
     port = int(os.environ.get("LOCAL_PORT", 8001))
     uvicorn.run(app, host="0.0.0.0", port=port)
