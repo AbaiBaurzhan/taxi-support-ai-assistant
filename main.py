@@ -34,12 +34,20 @@ class ChatResponse(BaseModel):
     source: str
     timestamp: str
 
-# Простые ответы
+# Простые ответы с синонимами
 SIMPLE_ANSWERS = {
     "наценка": "Наценка - это дополнительная плата за повышенный спрос. Она помогает привлечь больше водителей и сократить время ожидания.",
     "доставка": "Для заказа доставки: откройте приложение → выберите 'Доставка' → укажите адреса → подтвердите заказ.",
     "баланс": "Для пополнения баланса: откройте приложение → 'Профиль' → 'Пополнить баланс' → выберите способ оплаты.",
     "приложение": "Если приложение не работает: перезапустите, проверьте интернет, обновите до последней версии."
+}
+
+# Синонимы для улучшенного поиска
+SYNONYMS = {
+    "наценка": ["дорого", "подорожание", "повышение", "доплата", "наценкa", "наценкy"],
+    "доставка": ["курьер", "посылка", "отправить", "заказать", "доставкy", "доставкa"],
+    "баланс": ["счет", "кошелек", "пополнить", "платеж", "балaнс", "балaнc"],
+    "приложение": ["программа", "софт", "апп", "работать", "приложениe", "приложениa"]
 }
 
 @app.get("/")
@@ -54,8 +62,9 @@ async def health():
 async def chat(request: ChatRequest):
     text = request.text.lower()
     
-    # Простой поиск
+    # Улучшенный поиск с синонимами
     for keyword, answer in SIMPLE_ANSWERS.items():
+        # Прямой поиск по ключевому слову
         if keyword in text:
             return ChatResponse(
                 response=answer,
@@ -64,6 +73,18 @@ async def chat(request: ChatRequest):
                 source="simple",
                 timestamp=datetime.now().isoformat()
             )
+        
+        # Поиск по синонимам
+        if keyword in SYNONYMS:
+            for synonym in SYNONYMS[keyword]:
+                if synonym in text:
+                    return ChatResponse(
+                        response=answer,
+                        intent="faq",
+                        confidence=0.8,
+                        source="synonym",
+                        timestamp=datetime.now().isoformat()
+                    )
     
     # Fallback
     return ChatResponse(
