@@ -1,47 +1,27 @@
 #!/usr/bin/env python3
 """
-🚀 УЛУЧШЕННАЯ ИИ МОДЕЛЬ APARU
-Использует все доступные библиотеки для максимальной точности
+🚀 ГИБРИДНАЯ АРХИТЕКТУРА APARU AI
+LLM модель на ноутбуке + Railway проксирует запросы
 """
 
 import json
 import re
 import logging
+import requests
 from typing import Dict, Any, List, Optional
 from datetime import datetime
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import os
-
-# ML библиотеки
-import nltk
-from nltk.corpus import stopwords
-from nltk.stem import SnowballStemmer
-from fuzzywuzzy import fuzz, process
-import pandas as pd
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
-import numpy as np
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Загружаем NLTK данные
-try:
-    nltk.data.find('corpora/stopwords')
-except LookupError:
-    nltk.download('stopwords')
+app = FastAPI(title="APARU Hybrid AI Assistant", version="3.0.0")
 
-try:
-    nltk.data.find('tokenizers/punkt')
-except LookupError:
-    nltk.download('punkt')
-
-app = FastAPI(title="APARU Enhanced AI Assistant", version="3.0.0")
-
-# CORS
+# CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -66,212 +46,152 @@ class ChatResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     status: str
-    architecture: str = "enhanced"
+    architecture: str = "hybrid"
     timestamp: str
 
-# Расширенная база знаний
-ENHANCED_KB = {
-    "наценка": {
-        "answer": "Здравствуйте. Наценка является частью тарифной системы Компании и её наличие регулируется объёмом спроса на рассматриваемый момент. В вашем случае наблюдался повышенный спрос на услуги из-за погодных условий. Данная мера необходима для привлечения дополнительных водителей на выполнение заказов, что в свою очередь сокращает время ожидания для вас. Стоимость оплаты поездки рассчитывается согласно показаниям таксометра. Благодарим за обращение! С уважением, команда АПАРУ.",
-        "keywords": ["наценка", "наценки", "наценку", "наценкой", "дорого", "подорожание", "повышение", "доплата", "почему так дорого", "откуда доплата", "повысили цену", "зачем доплачивать"],
-        "synonyms": ["дорого", "подорожание", "повышение", "доплата", "повысили", "подняли цену"],
-        "variations": ["наценкa", "наценкy", "наценкi", "наценкe", "наценкoй"]
-    },
-    "доставка": {
-        "answer": "Для заказа доставки через приложение APARU: 1) Откройте приложение 2) Выберите раздел 'Доставка' 3) Укажите адрес отправления и получения 4) Выберите тип доставки 5) Подтвердите заказ. Курьер свяжется с вами для уточнения деталей.",
-        "keywords": ["доставка", "доставки", "доставку", "доставкой", "курьер", "посылка", "отправить", "заказать", "доставить", "передать"],
-        "synonyms": ["курьер", "посылка", "отправить", "заказать", "доставить", "передать", "отправка"],
-        "variations": ["доставкy", "доставкa", "доставкi", "доставкe", "доставкoй"]
-    },
-    "баланс": {
-        "answer": "Для пополнения баланса в приложении APARU: 1) Откройте приложение 2) Перейдите в раздел 'Профиль' 3) Выберите 'Пополнить баланс' 4) Выберите способ оплаты 5) Введите сумму 6) Подтвердите операцию. Баланс пополнится в течение нескольких минут.",
-        "keywords": ["баланс", "баланса", "балансу", "балансом", "счет", "кошелек", "пополнить", "платеж", "деньги", "средства"],
-        "synonyms": ["счет", "кошелек", "пополнить", "платеж", "деньги", "средства", "финансы"],
-        "variations": ["балaнс", "балaнc", "балaнсу", "балaнсом", "балaнca"]
-    },
-    "приложение": {
-        "answer": "Если приложение APARU не работает: 1) Перезапустите приложение 2) Проверьте подключение к интернету 3) Обновите приложение до последней версии 4) Очистите кэш приложения 5) Переустановите приложение. Если проблема не решается, обратитесь в службу поддержки.",
-        "keywords": ["приложение", "приложения", "приложению", "приложением", "программа", "софт", "апп", "работать", "не работает", "глючит", "висит"],
-        "synonyms": ["программа", "софт", "апп", "работать", "не работает", "глючит", "висит", "тормозит"],
-        "variations": ["приложениe", "приложениa", "приложениy", "приложениi", "приложениoм"]
-    }
-}
-
-class EnhancedAIModel:
+class HybridAIClient:
     def __init__(self):
-        self.stemmer = SnowballStemmer('russian')
-        self.stop_words = set(stopwords.words('russian'))
-        self.vectorizer = TfidfVectorizer(
-            max_features=1000,
-            stop_words=list(self.stop_words),
-            ngram_range=(1, 2)
-        )
-        self._prepare_knowledge_base()
+        # URL локальной LLM модели через ngrok
+        self.local_model_url = os.environ.get("LOCAL_MODEL_URL", "https://32f43b95cbea.ngrok-free.app")
+        self.model_name = "aparu-senior-ai"
+        self.local_available = False
         
-    def _prepare_knowledge_base(self):
-        """Подготавливает базу знаний для поиска"""
-        self.questions = []
-        self.answers = []
-        self.categories = []
+        # Проверяем доступность локальной модели
+        self._check_local_model()
         
-        for category, data in ENHANCED_KB.items():
-            # Основной вопрос
-            self.questions.append(f"Что такое {category}?")
-            self.answers.append(data["answer"])
-            self.categories.append(category)
+    def _check_local_model(self):
+        """Проверяет доступность локальной LLM модели"""
+        try:
+            response = requests.get(
+                f"{self.local_model_url}/api/tags", 
+                timeout=10,
+                headers={"ngrok-skip-browser-warning": "true"}
+            )
+            if response.status_code == 200:
+                self.local_available = True
+                logger.info("✅ Локальная LLM модель доступна")
+            else:
+                logger.warning("⚠️ Локальная LLM модель недоступна")
+        except Exception as e:
+            logger.warning(f"⚠️ Не удалось подключиться к локальной модели: {e}")
+    
+    def get_answer(self, question: str) -> Dict[str, Any]:
+        """Получает ответ от гибридной системы"""
+        start_time = datetime.now()
+        
+        # Используем локальную LLM модель
+        if self.local_available:
+            try:
+                logger.info("🧠 Запрашиваем ответ от локальной LLM модели...")
+                response = self._query_local_llm(question)
+                if response and response.get('response'):
+                    processing_time = (datetime.now() - start_time).total_seconds()
+                    logger.info(f"✅ LLM ответ получен за {processing_time:.2f}с")
+                    return response
+            except Exception as e:
+                logger.error(f"❌ Ошибка при запросе к LLM: {e}")
+        
+        # Fallback к простому поиску
+        logger.info("🔄 Fallback к простому поиску...")
+        return self._simple_search(question)
+    
+    def _query_local_llm(self, question: str) -> Dict[str, Any]:
+        """Запрашивает ответ от локальной LLM модели"""
+        try:
+            # Системный промпт для APARU
+            system_prompt = """Ты — AI-ассистент службы поддержки такси-агрегатора APARU. 
+Отвечай на вопросы пользователей о:
+- Наценках и тарифах
+- Доставке и курьерских услугах  
+- Балансе и платежах
+- Проблемах с приложением
+
+Отвечай кратко, вежливо и по существу. Если не знаешь ответ, предложи обратиться в службу поддержки."""
             
-            # Добавляем вариации вопросов
-            for keyword in data["keywords"]:
-                if keyword != category:  # Избегаем дублирования
-                    self.questions.append(f"Как {keyword}?")
-                    self.answers.append(data["answer"])
-                    self.categories.append(category)
-        
-        # Обучаем TF-IDF
-        self.tfidf_matrix = self.vectorizer.fit_transform(self.questions)
-        logger.info(f"✅ База знаний подготовлена: {len(self.questions)} вопросов")
+            payload = {
+                "model": self.model_name,
+                "prompt": f"{system_prompt}\n\nВопрос: {question}",
+                "stream": False,
+                "options": {
+                    "temperature": 0.7,
+                    "max_tokens": 500
+                }
+            }
+            
+            response = requests.post(
+                f"{self.local_model_url}/api/generate",
+                json=payload,
+                timeout=120,  # Увеличиваем таймаут для LLM
+                headers={"ngrok-skip-browser-warning": "true"}
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                answer = data.get('response', '').strip()
+                
+                if answer:
+                    return {
+                        "answer": answer,
+                        "category": "llm_generated",
+                        "confidence": 0.9,
+                        "source": "local_llm"
+                    }
+            
+            logger.warning(f"⚠️ LLM вернул неожиданный ответ: {response.status_code}")
+            return None
+            
+        except Exception as e:
+            logger.error(f"❌ Ошибка запроса к LLM: {e}")
+            return None
     
-    def normalize_text(self, text: str) -> str:
-        """Нормализует текст"""
-        # Убираем эмодзи и спецсимволы
-        text = re.sub(r'[^\w\s]', ' ', text.lower())
-        # Убираем лишние пробелы
-        text = re.sub(r'\s+', ' ', text).strip()
-        return text
-    
-    def find_best_match(self, query: str) -> Dict[str, Any]:
-        """Находит лучший ответ на вопрос"""
-        normalized_query = self.normalize_text(query)
+    def _simple_search(self, question: str) -> Dict[str, Any]:
+        """Простой поиск по ключевым словам (fallback)"""
+        question_lower = question.lower()
         
-        # 1. Прямой поиск по ключевым словам
-        direct_match = self._direct_search(normalized_query)
-        if direct_match["confidence"] > 0.8:
-            return direct_match
+        # Простая база знаний
+        simple_kb = {
+            "наценка": "Наценка - это дополнительная плата за повышенный спрос. Она помогает привлечь больше водителей и сократить время ожидания.",
+            "доставка": "Для заказа доставки: откройте приложение → выберите 'Доставка' → укажите адреса → подтвердите заказ.",
+            "баланс": "Для пополнения баланса: откройте приложение → 'Профиль' → 'Пополнить баланс' → выберите способ оплаты.",
+            "приложение": "Если приложение не работает: перезапустите, проверьте интернет, обновите до последней версии."
+        }
         
-        # 2. Fuzzy поиск
-        fuzzy_match = self._fuzzy_search(normalized_query)
-        if fuzzy_match["confidence"] > 0.6:
-            return fuzzy_match
+        # Поиск по ключевым словам
+        for keyword, answer in simple_kb.items():
+            if keyword in question_lower:
+                return {
+                    "answer": answer,
+                    "category": keyword,
+                    "confidence": 0.8,
+                    "source": "simple_search"
+                }
         
-        # 3. TF-IDF поиск
-        tfidf_match = self._tfidf_search(normalized_query)
-        if tfidf_match["confidence"] > 0.5:
-            return tfidf_match
-        
-        # 4. Fallback
+        # Fallback
         return {
             "answer": "Извините, не могу найти ответ на ваш вопрос. Обратитесь в службу поддержки.",
             "category": "unknown",
             "confidence": 0.0,
-            "source": "fallback",
-            "suggestions": self._get_suggestions(normalized_query)
+            "source": "fallback"
         }
-    
-    def _direct_search(self, query: str) -> Dict[str, Any]:
-        """Прямой поиск по ключевым словам"""
-        for category, data in ENHANCED_KB.items():
-            # Проверяем основные ключевые слова
-            for keyword in data["keywords"]:
-                if keyword in query:
-                    return {
-                        "answer": data["answer"],
-                        "category": category,
-                        "confidence": 0.9,
-                        "source": "direct"
-                    }
-            
-            # Проверяем синонимы
-            for synonym in data["synonyms"]:
-                if synonym in query:
-                    return {
-                        "answer": data["answer"],
-                        "category": category,
-                        "confidence": 0.8,
-                        "source": "synonym"
-                    }
-            
-            # Проверяем вариации (опечатки)
-            for variation in data["variations"]:
-                if variation in query:
-                    return {
-                        "answer": data["answer"],
-                        "category": category,
-                        "confidence": 0.7,
-                        "source": "variation"
-                    }
-        
-        return {"confidence": 0.0}
-    
-    def _fuzzy_search(self, query: str) -> Dict[str, Any]:
-        """Fuzzy поиск"""
-        best_score = 0
-        best_match = None
-        
-        for category, data in ENHANCED_KB.items():
-            # Проверяем все ключевые слова
-            all_keywords = data["keywords"] + data["synonyms"] + data["variations"]
-            
-            for keyword in all_keywords:
-                score = fuzz.partial_ratio(query, keyword)
-                if score > best_score:
-                    best_score = score
-                    best_match = {
-                        "answer": data["answer"],
-                        "category": category,
-                        "confidence": score / 100,
-                        "source": "fuzzy"
-                    }
-        
-        return best_match if best_match and best_match["confidence"] > 0.6 else {"confidence": 0.0}
-    
-    def _tfidf_search(self, query: str) -> Dict[str, Any]:
-        """TF-IDF поиск"""
-        try:
-            query_vector = self.vectorizer.transform([query])
-            similarities = cosine_similarity(query_vector, self.tfidf_matrix).flatten()
-            
-            best_idx = np.argmax(similarities)
-            best_score = similarities[best_idx]
-            
-            if best_score > 0.3:
-                return {
-                    "answer": self.answers[best_idx],
-                    "category": self.categories[best_idx],
-                    "confidence": float(best_score),
-                    "source": "tfidf"
-                }
-        except Exception as e:
-            logger.error(f"Ошибка TF-IDF поиска: {e}")
-        
-        return {"confidence": 0.0}
-    
-    def _get_suggestions(self, query: str) -> List[str]:
-        """Получает предложения похожих вопросов"""
-        suggestions = []
-        
-        for category, data in ENHANCED_KB.items():
-            # Добавляем основные вопросы
-            suggestions.append(f"Что такое {category}?")
-            
-            # Добавляем популярные варианты
-            for keyword in data["keywords"][:3]:  # Только первые 3
-                if keyword != category:
-                    suggestions.append(f"Как {keyword}?")
-        
-        return suggestions[:5]  # Максимум 5 предложений
 
-# Глобальный экземпляр модели
-ai_model = EnhancedAIModel()
+# Глобальный экземпляр
+hybrid_client = HybridAIClient()
 
 @app.get("/")
 async def root():
-    return {"message": "APARU Enhanced AI Assistant", "status": "running", "version": "3.0.0"}
+    return {
+        "message": "APARU Hybrid AI Assistant", 
+        "status": "running", 
+        "version": "3.0.0",
+        "architecture": "hybrid",
+        "local_model_available": hybrid_client.local_available
+    }
 
 @app.get("/health", response_model=HealthResponse)
 async def health():
     return HealthResponse(
         status="healthy",
-        architecture="enhanced",
+        architecture="hybrid",
         timestamp=datetime.now().isoformat()
     )
 
@@ -279,7 +199,7 @@ async def health():
 async def chat(request: ChatRequest):
     """Основной эндпоинт для чата"""
     try:
-        result = ai_model.find_best_match(request.text)
+        result = hybrid_client.get_answer(request.text)
         
         return ChatResponse(
             response=result["answer"],
@@ -287,7 +207,7 @@ async def chat(request: ChatRequest):
             confidence=result["confidence"],
             source=result["source"],
             timestamp=datetime.now().isoformat(),
-            suggestions=result.get("suggestions", [])
+            suggestions=[]
         )
     
     except Exception as e:

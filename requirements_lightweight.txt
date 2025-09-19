@@ -1,9 +1,6 @@
-# Минимальные зависимости для легкого Railway API
-fastapi>=0.104.1
-uvicorn>=0.24.0
-pydantic>=2.8.0
-requests>=2.31.0
-python-multipart>=0.0.6
-
-# Только базовые библиотеки - никаких ML зависимостей!
-# Это позволит Railway собирать проект за 1-2 минуты
+fastapi==0.116.1
+uvicorn==0.35.0
+pydantic==2.11.7
+langdetect==1.0.9
+requests==2.32.5
+python-multipart==0.0.20
