@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-🚀 APARU AI ASSISTANT - ПОИСКОВАЯ LLM СИСТЕМА
-LLM работает как поисковая система - находит готовые ответы из базы
+🚀 ОПТИМИЗИРОВАННАЯ ПОИСКОВАЯ LLM СИСТЕМА APARU AI
+Короткий промпт для быстрого поиска ответов
 """
 
 import json
@@ -9,48 +9,13 @@ import logging
 import requests
 from typing import Dict, Any, List, Optional
 from datetime import datetime
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
-from pydantic import BaseModel
 import os
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="APARU Search-Based AI", version="4.0.0")
-
-# CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Модели
-class ChatRequest(BaseModel):
-    text: str
-    user_id: str
-    locale: str = "ru"
-
-class ChatResponse(BaseModel):
-    response: str
-    intent: str
-    confidence: float
-    source: str
-    timestamp: str
-    suggestions: List[str] = []
-
-class HealthResponse(BaseModel):
-    status: str
-    architecture: str = "search_based_llm"
-    timestamp: str
-    llm_available: bool = False
-
-class SearchBasedLLMClient:
+class OptimizedSearchLLMClient:
     def __init__(self):
         self.ollama_url = os.environ.get("OLLAMA_URL", "http://localhost:11434")
         self.model_name = "aparu-senior-ai"
@@ -228,70 +193,25 @@ class SearchBasedLLMClient:
             "source": "fallback"
         }
 
-# Глобальный экземпляр
-search_llm_client = SearchBasedLLMClient()
-
-@app.get("/")
-async def root():
-    return {
-        "message": "APARU Search-Based AI", 
-        "status": "running", 
-        "version": "4.0.0",
-        "architecture": "search_based_llm",
-        "llm_available": search_llm_client.ollama_available
-    }
-
-@app.get("/health", response_model=HealthResponse)
-async def health():
-    return HealthResponse(
-        status="healthy",
-        architecture="search_based_llm",
-        timestamp=datetime.now().isoformat(),
-        llm_available=search_llm_client.ollama_available
-    )
-
-@app.get("/webapp", response_class=HTMLResponse)
-async def webapp():
-    """Telegram WebApp интерфейс"""
-    try:
-        with open("webapp.html", "r", encoding="utf-8") as f:
-            html_content = f.read()
-        return HTMLResponse(content=html_content)
-    except FileNotFoundError:
-        return HTMLResponse(
-            content="<h1>WebApp не найден</h1><p>Файл webapp.html отсутствует</p>",
-            status_code=404
-        )
-
-@app.post("/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest):
-    """Основной эндпоинт для чата"""
-    try:
-        result = search_llm_client.find_best_answer(request.text)
-        
-        return ChatResponse(
-            response=result["answer"],
-            intent=result["category"],
-            confidence=result["confidence"],
-            source=result["source"],
-            timestamp=datetime.now().isoformat(),
-            suggestions=[]
-        )
-    
-    except Exception as e:
-        logger.error(f"Ошибка в /chat: {e}")
-        return ChatResponse(
-            response="Извините, произошла ошибка при обработке вашего запроса.",
-            intent="error",
-            confidence=0.0,
-            source="error",
-            timestamp=datetime.now().isoformat(),
-            suggestions=[]
-        )
-
+# Тестирование
 if __name__ == "__main__":
-    import uvicorn
+    client = OptimizedSearchLLMClient()
     
-    # Railway использует переменную PORT
-    port = int(os.environ.get("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    test_questions = [
+        "Что такое наценка?",
+        "Как заказать доставку?",
+        "Как пополнить баланс?",
+        "Что такое тариф комфорта?"
+    ]
+    
+    print("🚀 ТЕСТИРОВАНИЕ ОПТИМИЗИРОВАННОЙ ПОИСКОВОЙ LLM СИСТЕМЫ:")
+    print("=" * 60)
+    
+    for question in test_questions:
+        print(f"\n❓ Вопрос: {question}")
+        result = client.find_best_answer(question)
+        print(f"✅ Ответ: {result['answer'][:100]}...")
+        print(f"📊 Категория: {result['category']}")
+        print(f"🎯 Уверенность: {result['confidence']}")
+        print(f"🔧 Источник: {result['source']}")
+        print("-" * 40)
