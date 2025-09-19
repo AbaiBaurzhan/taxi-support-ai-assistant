@@ -12,6 +12,7 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 import os
 
@@ -195,6 +196,19 @@ async def health():
         timestamp=datetime.now().isoformat()
     )
 
+@app.get("/webapp", response_class=HTMLResponse)
+async def webapp():
+    """Telegram WebApp интерфейс"""
+    try:
+        with open("webapp.html", "r", encoding="utf-8") as f:
+            html_content = f.read()
+        return HTMLResponse(content=html_content)
+    except FileNotFoundError:
+        return HTMLResponse(
+            content="<h1>WebApp не найден</h1><p>Файл webapp.html отсутствует</p>",
+            status_code=404
+        )
+
 @app.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
     """Основной эндпоинт для чата"""
@@ -212,7 +226,7 @@ async def chat(request: ChatRequest):
     
     except Exception as e:
         logger.error(f"Ошибка в /chat: {e}")
-        return ChatResponse(
+    return ChatResponse(
             response="Извините, произошла ошибка при обработке вашего запроса.",
             intent="error",
             confidence=0.0,
