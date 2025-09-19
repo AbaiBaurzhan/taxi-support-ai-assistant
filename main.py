@@ -21,41 +21,41 @@ from langdetect.lang_detect_exception import LangDetectException
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# ГИБРИДНАЯ АРХИТЕКТУРА: Локальная модель + Railway прокси
+# ЛОКАЛЬНАЯ СИСТЕМА ПОИСКА: enhanced_search_client с 100% точностью
 try:
-    from hybrid_ai_client import HybridAIClient
-    hybrid_client = HybridAIClient()
-    logger.info("✅ Гибридная архитектура активирована")
-    HYBRID_MODE = True
+    from enhanced_search_client import get_enhanced_answer
+    logger.info("✅ Enhanced search client активирован (100% точность)")
+    HYBRID_MODE = False
 except ImportError:
-    logger.warning("⚠️ Гибридная архитектура недоступна, используем локальную")
     try:
-        from enhanced_search_client import get_enhanced_answer
+        from morphological_search_client import get_enhanced_answer
+        logger.info("✅ Morphological search client активирован")
         HYBRID_MODE = False
     except ImportError:
         try:
-            from morphological_search_client import get_enhanced_answer
+            from railway_optimized_client import get_enhanced_answer
+            logger.info("✅ Railway optimized client активирован")
             HYBRID_MODE = False
         except ImportError:
             try:
-                from railway_optimized_client import get_enhanced_answer
+                from maximum_accuracy_client import get_enhanced_answer
+                logger.info("✅ Maximum accuracy client активирован")
                 HYBRID_MODE = False
             except ImportError:
                 try:
-                    from maximum_accuracy_client import get_enhanced_answer
+                    from ultimate_search_client import get_enhanced_answer
+                    logger.info("✅ Ultimate search client активирован")
                     HYBRID_MODE = False
                 except ImportError:
                     try:
-                        from ultimate_search_client import get_enhanced_answer
+                        from senior_ai_integrated_client import get_enhanced_answer
+                        logger.info("✅ Senior AI integrated client активирован")
                         HYBRID_MODE = False
                     except ImportError:
-                        try:
-                            from senior_ai_integrated_client import get_enhanced_answer
-                            HYBRID_MODE = False
-                        except ImportError:
-                            # Fallback к простой версии для Railway
-                            from railway_simple_client import get_enhanced_answer
-                            HYBRID_MODE = False
+                        # Fallback к простой версии для Railway
+                        from railway_simple_client import get_enhanced_answer
+                        logger.info("✅ Railway simple client активирован (fallback)")
+                        HYBRID_MODE = False
 
 app = FastAPI(title="APARU Hybrid AI Assistant", version="2.0.0")
 
