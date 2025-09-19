@@ -164,34 +164,14 @@ def classify_intent(text: str) -> str:
 # Получение ответа от AI системы
 def get_ai_response(text: str) -> str:
     """Получает ответ от AI системы"""
-    if HYBRID_MODE and 'hybrid_client' in globals():
-        try:
-            response = hybrid_client.get_answer(text)
-            logger.info("✅ Ответ получен от гибридной системы")
-            return response
-        except Exception as e:
-            logger.error(f"Ошибка в гибридной системе: {e}")
-            # Fallback к локальной системе
-            try:
-                answer_data = get_enhanced_answer(text)
-                if isinstance(answer_data, dict):
-                    return answer_data.get('answer', 'Извините, не могу найти ответ на ваш вопрос.')
-                else:
-                    return answer_data
-            except Exception as e2:
-                logger.error(f"Ошибка в локальной системе: {e2}")
-                return "Извините, произошла ошибка при обработке вашего запроса."
-    else:
-        # Локальная система
-        try:
-            answer_data = get_enhanced_answer(text)
-            if isinstance(answer_data, dict):
-                return answer_data.get('answer', 'Извините, не могу найти ответ на ваш вопрос.')
-            else:
-                return answer_data
-        except Exception as e:
-            logger.error(f"Ошибка в локальной системе: {e}")
-            return "Извините, произошла ошибка при обработке вашего запроса."
+    try:
+        # Используем enhanced_search_client напрямую
+        answer = get_enhanced_answer(text)
+        logger.info("✅ Ответ получен от enhanced_search_client")
+        return answer
+    except Exception as e:
+        logger.error(f"Ошибка в enhanced_search_client: {e}")
+        return "Извините, произошла ошибка при обработке вашего запроса."
 
 # API эндпоинты
 @app.get("/")
