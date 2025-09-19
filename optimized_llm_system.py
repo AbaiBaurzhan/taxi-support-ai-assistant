@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-🚀 APARU AI ASSISTANT - УЛУЧШЕННАЯ ПОИСКОВАЯ СИСТЕМА
+🚀 УЛУЧШЕННАЯ ПОИСКОВАЯ LLM СИСТЕМА APARU AI
 Реализует все рекомендации для улучшения LLM поиска
 """
 
@@ -9,48 +9,13 @@ import logging
 import requests
 from typing import Dict, Any, List, Optional
 from datetime import datetime
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
-from pydantic import BaseModel
 import os
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="APARU Enhanced AI", version="5.0.0")
-
-# CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Модели
-class ChatRequest(BaseModel):
-    text: str
-    user_id: str
-    locale: str = "ru"
-
-class ChatResponse(BaseModel):
-    response: str
-    intent: str
-    confidence: float
-    source: str
-    timestamp: str
-    suggestions: List[str] = []
-
-class HealthResponse(BaseModel):
-    status: str
-    architecture: str = "enhanced_search"
-    timestamp: str
-    llm_available: bool = False
-
-class EnhancedSearchClient:
+class OptimizedSearchLLMClient:
     def __init__(self):
         self.ollama_url = os.environ.get("OLLAMA_URL", "http://localhost:11434")
         self.model_name = "aparu-senior-ai"
@@ -183,7 +148,7 @@ class EnhancedSearchClient:
             return None
     
     def _parse_category_number(self, answer: str) -> Optional[int]:
-        """Парсим номер категории из ответа LLM"""
+        """Парсит номер категории из ответа LLM"""
         try:
             # Ищем число в ответе
             import re
@@ -312,70 +277,31 @@ class EnhancedSearchClient:
         
         return "Ответ не найден"
 
-# Глобальный экземпляр
-enhanced_search_client = EnhancedSearchClient()
-
-@app.get("/")
-async def root():
-    return {
-        "message": "APARU Enhanced AI", 
-        "status": "running", 
-        "version": "5.0.0",
-        "architecture": "enhanced_search",
-        "llm_available": enhanced_search_client.ollama_available
-    }
-
-@app.get("/health", response_model=HealthResponse)
-async def health():
-    return HealthResponse(
-        status="healthy",
-        architecture="enhanced_search",
-        timestamp=datetime.now().isoformat(),
-        llm_available=enhanced_search_client.ollama_available
-    )
-
-@app.get("/webapp", response_class=HTMLResponse)
-async def webapp():
-    """Telegram WebApp интерфейс"""
-    try:
-        with open("webapp.html", "r", encoding="utf-8") as f:
-            html_content = f.read()
-        return HTMLResponse(content=html_content)
-    except FileNotFoundError:
-        return HTMLResponse(
-            content="<h1>WebApp не найден</h1><p>Файл webapp.html отсутствует</p>",
-            status_code=404
-        )
-
-@app.post("/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest):
-    """Основной эндпоинт для чата"""
-    try:
-        result = enhanced_search_client.find_best_answer(request.text)
-        
-        return ChatResponse(
-            response=result["answer"],
-            intent=result["category"],
-            confidence=result["confidence"],
-            source=result["source"],
-            timestamp=datetime.now().isoformat(),
-            suggestions=[]
-        )
-    
-    except Exception as e:
-        logger.error(f"Ошибка в /chat: {e}")
-        return ChatResponse(
-            response="Извините, произошла ошибка при обработке вашего запроса.",
-            intent="error",
-            confidence=0.0,
-            source="error",
-            timestamp=datetime.now().isoformat(),
-            suggestions=[]
-        )
-
+# Тестирование
 if __name__ == "__main__":
-    import uvicorn
+    client = OptimizedSearchLLMClient()
     
-    # Railway использует переменную PORT
-    port = int(os.environ.get("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    test_questions = [
+        "Что такое наценка?",
+        "Как заказать доставку?",
+        "Как пополнить баланс?",
+        "Приложение не работает",
+        "Что такое тариф комфорт?",
+        "Почему дорого?",
+        "Курьер не приехал",
+        "Не могу оплатить",
+        "Ошибка в приложении",
+        "Чем отличается комфорт?"
+    ]
+    
+    print("🚀 ТЕСТИРОВАНИЕ УЛУЧШЕННОЙ LLM СИСТЕМЫ:")
+    print("=" * 50)
+    
+    for i, question in enumerate(test_questions, 1):
+        print(f"{i:2d}. {question}")
+        result = client.find_best_answer(question)
+        print(f"    ✅ Ответ: {result['answer'][:100]}...")
+        print(f"    📊 Категория: {result['category']}")
+        print(f"    🎯 Уверенность: {result['confidence']}")
+        print(f"    🔧 Источник: {result['source']}")
+        print("-" * 40)
