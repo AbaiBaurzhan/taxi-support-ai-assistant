@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-🎯 УЛЬТРА-ПРОСТАЯ LLM СИСТЕМА С МИНИМАЛЬНЫМ ПРОМПТОМ
+🧠 УЛУЧШЕННАЯ LLM СИСТЕМА С ОБУЧЕНИЕМ НА ВАРИАЦИЯХ
+LLM использует question_variations и keywords для точного поиска ответов
 """
 
 import json
@@ -18,7 +19,7 @@ import os
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="APARU Ultra Simple LLM", version="7.0.0")
+app = FastAPI(title="APARU Trained LLM AI", version="6.0.0")
 
 # CORS middleware
 app.add_middleware(
@@ -45,24 +46,24 @@ class ChatResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     status: str
-    architecture: str = "ultra_simple_llm"
+    architecture: str = "trained_llm"
     timestamp: str
     llm_available: bool = False
 
-class UltraSimpleLLMClient:
+class TrainedLLMClient:
     def __init__(self):
         self.ollama_url = os.environ.get("OLLAMA_URL", "http://localhost:11434")
         self.model_name = "aparu-senior-ai"
         self.ollama_available = False
         
-        # Загружаем базу знаний
+        # Загружаем базу знаний с вариациями и ключевыми словами
         self.knowledge_base = self._load_knowledge_base()
         
         # Проверяем доступность Ollama
         self._check_ollama_model()
     
     def _load_knowledge_base(self) -> List[Dict[str, Any]]:
-        """Загружает базу знаний"""
+        """Загружает базу знаний с вариациями и ключевыми словами"""
         try:
             with open("BZ.txt", "r", encoding="utf-8") as f:
                 data = json.load(f)
@@ -89,14 +90,14 @@ class UltraSimpleLLMClient:
             logger.warning(f"⚠️ Не удалось подключиться к Ollama: {e}")
     
     def find_best_answer(self, question: str) -> Dict[str, Any]:
-        """Находит лучший ответ используя ультра-простую LLM"""
+        """Находит лучший ответ используя обученную LLM"""
         start_time = datetime.now()
         
-        # Используем ультра-простую LLM
+        # Используем обученную LLM для поиска
         if self.ollama_available:
             try:
-                logger.info("🎯 Используем ультра-простую LLM...")
-                result = self._ultra_simple_llm_search(question)
+                logger.info("🧠 Используем обученную LLM для поиска ответа...")
+                result = self._trained_llm_search(question)
                 if result:
                     processing_time = (datetime.now() - start_time).total_seconds()
                     logger.info(f"✅ LLM поиск завершен за {processing_time:.2f}с")
@@ -104,91 +105,116 @@ class UltraSimpleLLMClient:
             except Exception as e:
                 logger.error(f"❌ Ошибка LLM поиска: {e}")
         
-        # Fallback к поиску по ключевым словам
+        # Fallback к простому поиску по ключевым словам
         logger.info("🔄 Fallback к поиску по ключевым словам...")
         return self._keyword_search(question)
     
-    def _ultra_simple_llm_search(self, question: str) -> Dict[str, Any]:
-        """Ультра-простой LLM поиск с минимальным промптом"""
+    def _trained_llm_search(self, question: str) -> Dict[str, Any]:
+        """Использует обученную LLM для поиска ответа по вариациям и ключевым словам"""
         try:
-            # УЛЬТРА-ПРОСТОЙ ПРОМПТ
-            prompt = f"""Вопрос: "{question}"
-
-Выбери номер:
-1 - наценка/доплата
-2 - комфорт/тариф
-3 - расценка/стоимость
-4 - доставка/заказ
-5 - предварительный заказ
-6 - регистрация водителя
-7 - пополнение баланса
-8 - приложение/техподдержка
-9 - промокод/скидка
-10 - отмена заказа
-
-Номер:"""
-
+            # Создаем обучающий промпт с вариациями и ключевыми словами
+            training_prompt = self._create_training_prompt(question)
+            
             payload = {
                 "model": self.model_name,
-                "prompt": prompt,
+                "prompt": training_prompt,
                 "stream": False,
                 "options": {
-                    "temperature": 0.0,   # Минимальная температура
-                    "num_predict": 2,     # Только номер
-                    "num_ctx": 256,       # Минимальный контекст
+                    "temperature": 0.1,   # Низкая температура для точности
+                    "num_predict": 10,    # Короткий ответ
+                    "num_ctx": 1024,      # Достаточный контекст
                     "repeat_penalty": 1.0,
-                    "top_k": 1,           # Только лучший вариант
-                    "top_p": 0.1,         # Минимальная вероятность
-                    "stop": ["\n", ".", "!", "?", "Ответ:", "Категория:"]  # Ранние стоп-слова
+                    "top_k": 3,           # Несколько вариантов
+                    "top_p": 0.8,         # Умеренная вероятность
+                    "stop": ["\n\n", "Ответ:", "Категория:", "Объяснение:"]  # Стоп-слова
                 }
             }
             
             response = requests.post(
                 f"{self.ollama_url}/api/generate",
                 json=payload,
-                timeout=8  # Короткий таймаут
+                timeout=15  # Увеличенный таймаут для обучения
             )
             
             if response.status_code == 200:
                 data = response.json()
                 answer = data.get('response', '').strip()
                 
-                # Парсим номер категории
-                category_num = self._parse_category_number(answer)
-                if category_num:
-                    # Получаем ответ из базы знаний
-                    if 1 <= category_num <= len(self.knowledge_base):
-                        kb_item = self.knowledge_base[category_num - 1]
-                        return {
-                            "answer": kb_item.get("answer", "Ответ не найден"),
-                            "category": f"Категория {category_num}",
-                            "confidence": 0.95,
-                            "source": "ultra_simple_llm"
-                        }
+                # Парсим ответ LLM
+                result = self._parse_llm_response(answer, question)
+                if result:
+                    return result
                 
-                logger.warning(f"⚠️ LLM вернул неожиданный ответ: '{answer}'")
+                logger.warning(f"⚠️ LLM вернул неожиданный ответ: {answer}")
                 return None
             
             logger.warning(f"⚠️ LLM вернул ошибку: {response.status_code}")
             return None
             
         except requests.exceptions.Timeout:
-            logger.error(f"❌ LLM поиск таймаут (>8с)")
+            logger.error(f"❌ LLM поиск таймаут (>15с)")
             return None
         except Exception as e:
             logger.error(f"❌ Ошибка LLM поиска: {e}")
             return None
     
-    def _parse_category_number(self, answer: str) -> Optional[int]:
-        """Парсим номер категории из ответа LLM"""
+    def _create_training_prompt(self, question: str) -> str:
+        """Создает обучающий промпт с вариациями и ключевыми словами"""
+        prompt = f"""Ты — AI-ассистент службы поддержки такси APARU. Твоя задача — найти подходящий ответ на вопрос пользователя.
+
+ВОПРОС ПОЛЬЗОВАТЕЛЯ: "{question}"
+
+БАЗА ЗНАНИЙ APARU (с вариациями вопросов и ключевыми словами):"""
+
+        for i, item in enumerate(self.knowledge_base, 1):
+            variations = item.get("question_variations", [])
+            keywords = item.get("keywords", [])
+            answer = item.get("answer", "")
+            
+            prompt += f"\n\n{i}. ВАРИАЦИИ ВОПРОСОВ:"
+            for variation in variations[:5]:  # Берем первые 5 вариаций
+                prompt += f"\n   - {variation}"
+            
+            prompt += f"\n   КЛЮЧЕВЫЕ СЛОВА: {', '.join(keywords)}"
+            prompt += f"\n   ОТВЕТ: {answer[:200]}..."
+        
+        prompt += f"""
+
+ИНСТРУКЦИИ:
+1. Проанализируй вопрос пользователя: "{question}"
+2. Найди в базе знаний пункт, который наиболее точно соответствует вопросу
+3. Сравни вопрос с вариациями вопросов и ключевыми словами
+4. Если найден подходящий пункт, верни его номер (1, 2, 3, и т.д.)
+5. Если ни один пункт не подходит, верни "0"
+
+Твой ответ (только номер):"""
+
+        return prompt
+    
+    def _parse_llm_response(self, answer: str, question: str) -> Optional[Dict[str, Any]]:
+        """Парсит ответ LLM и возвращает соответствующий ответ из базы знаний"""
         try:
             # Ищем число в ответе
             import re
             numbers = re.findall(r'\d+', answer)
             if numbers:
                 num = int(numbers[0])
-                if 1 <= num <= 10:
-                    return num
+                if 1 <= num <= len(self.knowledge_base):
+                    # Получаем ответ из базы знаний
+                    kb_item = self.knowledge_base[num - 1]
+                    return {
+                        "answer": kb_item.get("answer", "Ответ не найден"),
+                        "category": f"Категория {num}",
+                        "confidence": 0.95,
+                        "source": "trained_llm_search"
+                    }
+                elif num == 0:
+                    return {
+                        "answer": "Извините, не могу найти точный ответ на ваш вопрос в базе знаний. Пожалуйста, уточните или обратитесь в службу поддержки.",
+                        "category": "unknown",
+                        "confidence": 0.5,
+                        "source": "trained_llm_no_match"
+                    }
             return None
         except:
             return None
@@ -240,25 +266,25 @@ class UltraSimpleLLMClient:
         }
 
 # Глобальный экземпляр
-ultra_simple_llm_client = UltraSimpleLLMClient()
+trained_llm_client = TrainedLLMClient()
 
 @app.get("/")
 async def root():
     return {
-        "message": "APARU Ultra Simple LLM", 
+        "message": "APARU Trained LLM AI", 
         "status": "running", 
-        "version": "7.0.0",
-        "architecture": "ultra_simple_llm",
-        "llm_available": ultra_simple_llm_client.ollama_available
+        "version": "6.0.0",
+        "architecture": "trained_llm",
+        "llm_available": trained_llm_client.ollama_available
     }
 
 @app.get("/health", response_model=HealthResponse)
 async def health():
     return HealthResponse(
         status="healthy",
-        architecture="ultra_simple_llm",
+        architecture="trained_llm",
         timestamp=datetime.now().isoformat(),
-        llm_available=ultra_simple_llm_client.ollama_available
+        llm_available=trained_llm_client.ollama_available
     )
 
 @app.get("/webapp", response_class=HTMLResponse)
@@ -278,7 +304,7 @@ async def webapp():
 async def chat(request: ChatRequest):
     """Основной эндпоинт для чата"""
     try:
-        result = ultra_simple_llm_client.find_best_answer(request.text)
+        result = trained_llm_client.find_best_answer(request.text)
         
         return ChatResponse(
             response=result["answer"],
