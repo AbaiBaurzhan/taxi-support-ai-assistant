@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-🚀 ФИНАЛЬНАЯ ГИБРИДНАЯ АРХИТЕКТУРА APARU AI
-LLM модель на ноутбуке + Railway проксирует запросы
+🚀 ОПТИМИЗИРОВАННАЯ ГИБРИДНАЯ АРХИТЕКТУРА APARU AI
+LLM модель работает на ноутбуке, Railway только проксирует запросы
 """
 
 import json
@@ -21,21 +21,21 @@ from langdetect.lang_detect_exception import LangDetectException
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# ГИБРИДНАЯ СИСТЕМА: Локальная модель через ngrok + Railway прокси
+# ГИБРИДНАЯ СИСТЕМА: Локальная модель + Railway прокси
 try:
-    from simple_hybrid_client import get_simple_hybrid_answer, simple_hybrid_client
-    logger.info("✅ Финальная гибридная система активирована")
+    from optimized_hybrid_client import get_hybrid_answer, hybrid_client
+    logger.info("✅ Оптимизированная гибридная система активирована")
     HYBRID_MODE = True
 except ImportError:
     try:
-        from enhanced_search_client import get_enhanced_answer as get_simple_hybrid_answer
+        from enhanced_search_client import get_enhanced_answer as get_hybrid_answer
         logger.info("✅ Fallback к локальной системе поиска")
         HYBRID_MODE = False
     except ImportError:
         logger.error("❌ Ни одна система поиска не доступна")
         HYBRID_MODE = False
 
-app = FastAPI(title="APARU Final Hybrid AI Assistant", version="2.2.0")
+app = FastAPI(title="APARU Optimized Hybrid AI Assistant", version="2.1.0")
 
 # CORS middleware
 app.add_middleware(
@@ -66,6 +66,7 @@ class ChatResponse(BaseModel):
 class HealthResponse(BaseModel):
     status: str
     architecture: str
+    local_model_available: bool
     ngrok_available: bool
     timestamp: str
 
@@ -143,11 +144,11 @@ def get_ai_response(text: str) -> str:
     try:
         if HYBRID_MODE:
             # Используем гибридную систему
-            answer = get_simple_hybrid_answer(text)
+            answer = get_hybrid_answer(text)
             logger.info("✅ Ответ получен от гибридной системы")
         else:
             # Fallback к локальной системе
-            answer = get_simple_hybrid_answer(text)
+            answer = get_hybrid_answer(text)
             logger.info("✅ Ответ получен от локальной системы")
         return answer
     except Exception as e:
@@ -158,22 +159,25 @@ def get_ai_response(text: str) -> str:
 @app.get("/")
 async def root():
     return {
-        "message": "APARU Final Hybrid AI Assistant", 
+        "message": "APARU Optimized Hybrid AI Assistant", 
         "architecture": "hybrid" if HYBRID_MODE else "local",
-        "version": "2.2.0"
+        "version": "2.1.0"
     }
 
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
     """Проверка состояния системы"""
+    local_model_available = False
     ngrok_available = False
 
-    if HYBRID_MODE and 'simple_hybrid_client' in globals():
-        ngrok_available = simple_hybrid_client.ngrok_available
+    if HYBRID_MODE and 'hybrid_client' in globals():
+        local_model_available = hybrid_client.local_model_available
+        ngrok_available = hybrid_client.ngrok_available
 
     return HealthResponse(
         status="healthy",
         architecture="hybrid" if HYBRID_MODE else "local",
+        local_model_available=local_model_available,
         ngrok_available=ngrok_available,
         timestamp=datetime.now().isoformat()
     )
