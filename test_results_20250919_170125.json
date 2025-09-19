@@ -1,0 +1,415 @@
+{
+  "timestamp": "20250919_170125",
+  "local_results": {
+    "accuracy": 44.0,
+    "total_tests": 25,
+    "results": [
+      {
+        "question": "Что такое наценка?",
+        "expected": "наценка",
+        "actual": "наценка",
+        "category": "основной",
+        "correct": true,
+        "answer": "Наценка - это дополнительная плата за повышенный с..."
+      },
+      {
+        "question": "Как заказать доставку?",
+        "expected": "доставка",
+        "actual": "fallback",
+        "category": "основной",
+        "correct": false,
+        "answer": "Извините, не могу найти ответ. Обратитесь в службу..."
+      },
+      {
+        "question": "Как пополнить баланс?",
+        "expected": "баланс",
+        "actual": "баланс",
+        "category": "основной",
+        "correct": true,
+        "answer": "Для пополнения баланса: откройте приложение → 'Про..."
+      },
+      {
+        "question": "Приложение не работает",
+        "expected": "приложение",
+        "actual": "приложение",
+        "category": "основной",
+        "correct": true,
+        "answer": "Если приложение не работает: перезапустите, провер..."
+      },
+      {
+        "question": "Почему так дорого?",
+        "expected": "наценка",
+        "actual": "fallback",
+        "category": "синоним",
+        "correct": false,
+        "answer": "Извините, не могу найти ответ. Обратитесь в службу..."
+      },
+      {
+        "question": "Откуда доплата?",
+        "expected": "наценка",
+        "actual": "fallback",
+        "category": "синоним",
+        "correct": false,
+        "answer": "Извините, не могу найти ответ. Обратитесь в службу..."
+      },
+      {
+        "question": "Как отправить посылку?",
+        "expected": "доставка",
+        "actual": "fallback",
+        "category": "синоним",
+        "correct": false,
+        "answer": "Извините, не могу найти ответ. Обратитесь в службу..."
+      },
+      {
+        "question": "Нужен курьер",
+        "expected": "доставка",
+        "actual": "fallback",
+        "category": "синоним",
+        "correct": false,
+        "answer": "Извините, не могу найти ответ. Обратитесь в службу..."
+      },
+      {
+        "question": "Пополнить счет",
+        "expected": "баланс",
+        "actual": "fallback",
+        "category": "синоним",
+        "correct": false,
+        "answer": "Извините, не могу найти ответ. Обратитесь в службу..."
+      },
+      {
+        "question": "Платеж не проходит",
+        "expected": "баланс",
+        "actual": "fallback",
+        "category": "синоним",
+        "correct": false,
+        "answer": "Извините, не могу найти ответ. Обратитесь в службу..."
+      },
+      {
+        "question": "Программа глючит",
+        "expected": "приложение",
+        "actual": "fallback",
+        "category": "синоним",
+        "correct": false,
+        "answer": "Извините, не могу найти ответ. Обратитесь в службу..."
+      },
+      {
+        "question": "Софт не запускается",
+        "expected": "приложение",
+        "actual": "fallback",
+        "category": "синоним",
+        "correct": false,
+        "answer": "Извините, не могу найти ответ. Обратитесь в службу..."
+      },
+      {
+        "question": "А что за наценка такая?",
+        "expected": "наценка",
+        "actual": "наценка",
+        "category": "разговорный",
+        "correct": true,
+        "answer": "Наценка - это дополнительная плата за повышенный с..."
+      },
+      {
+        "question": "Можно ли заказать доставку?",
+        "expected": "доставка",
+        "actual": "fallback",
+        "category": "разговорный",
+        "correct": false,
+        "answer": "Извините, не могу найти ответ. Обратитесь в службу..."
+      },
+      {
+        "question": "Как бы пополнить баланс?",
+        "expected": "баланс",
+        "actual": "баланс",
+        "category": "разговорный",
+        "correct": true,
+        "answer": "Для пополнения баланса: откройте приложение → 'Про..."
+      },
+      {
+        "question": "У меня приложение виснет",
+        "expected": "приложение",
+        "actual": "приложение",
+        "category": "разговорный",
+        "correct": true,
+        "answer": "Если приложение не работает: перезапустите, провер..."
+      },
+      {
+        "question": "Что такое наценкa?",
+        "expected": "наценка",
+        "actual": "fallback",
+        "category": "опечатка",
+        "correct": false,
+        "answer": "Извините, не могу найти ответ. Обратитесь в службу..."
+      },
+      {
+        "question": "Как заказать доставкy?",
+        "expected": "доставка",
+        "actual": "fallback",
+        "category": "опечатка",
+        "correct": false,
+        "answer": "Извините, не могу найти ответ. Обратитесь в службу..."
+      },
+      {
+        "question": "Как пополнить балaнс?",
+        "expected": "баланс",
+        "actual": "fallback",
+        "category": "опечатка",
+        "correct": false,
+        "answer": "Извините, не могу найти ответ. Обратитесь в службу..."
+      },
+      {
+        "question": "Приложениe не работает",
+        "expected": "приложение",
+        "actual": "fallback",
+        "category": "опечатка",
+        "correct": false,
+        "answer": "Извините, не могу найти ответ. Обратитесь в службу..."
+      },
+      {
+        "question": "Наценка и доставка",
+        "expected": "наценка",
+        "actual": "наценка",
+        "category": "смешанный",
+        "correct": true,
+        "answer": "Наценка - это дополнительная плата за повышенный с..."
+      },
+      {
+        "question": "Баланс и приложение",
+        "expected": "баланс",
+        "actual": "баланс",
+        "category": "смешанный",
+        "correct": true,
+        "answer": "Для пополнения баланса: откройте приложение → 'Про..."
+      },
+      {
+        "question": "Как вызвать такси?",
+        "expected": "fallback",
+        "actual": "fallback",
+        "category": "неизвестный",
+        "correct": true,
+        "answer": "Извините, не могу найти ответ. Обратитесь в службу..."
+      },
+      {
+        "question": "Сколько стоит поездка?",
+        "expected": "fallback",
+        "actual": "fallback",
+        "category": "неизвестный",
+        "correct": true,
+        "answer": "Извините, не могу найти ответ. Обратитесь в службу..."
+      },
+      {
+        "question": "Где мой водитель?",
+        "expected": "fallback",
+        "actual": "fallback",
+        "category": "неизвестный",
+        "correct": true,
+        "answer": "Извините, не могу найти ответ. Обратитесь в службу..."
+      }
+    ]
+  },
+  "api_results": {
+    "accuracy": 0.0,
+    "total_tests": 25,
+    "results": [
+      {
+        "question": "Что такое наценка?",
+        "expected": "наценка",
+        "actual": "error",
+        "category": "основной",
+        "correct": false,
+        "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x102c2d550>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+      },
+      {
+        "question": "Как заказать доставку?",
+        "expected": "доставка",
+        "actual": "error",
+        "category": "основной",
+        "correct": false,
+        "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x102c41950>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+      },
+      {
+        "question": "Как пополнить баланс?",
+        "expected": "баланс",
+        "actual": "error",
+        "category": "основной",
+        "correct": false,
+        "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x102c42210>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+      },
+      {
+        "question": "Приложение не работает",
+        "expected": "приложение",
+        "actual": "error",
+        "category": "основной",
+        "correct": false,
+        "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x102c50770>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+      },
+      {
+        "question": "Почему так дорого?",
+        "expected": "наценка",
+        "actual": "error",
+        "category": "синоним",
+        "correct": false,
+        "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x102c50e90>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+      },
+      {
+        "question": "Откуда доплата?",
+        "expected": "наценка",
+        "actual": "error",
+        "category": "синоним",
+        "correct": false,
+        "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x102c54cb0>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+      },
+      {
+        "question": "Как отправить посылку?",
+        "expected": "доставка",
+        "actual": "error",
+        "category": "синоним",
+        "correct": false,
+        "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x102c70380>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+      },
+      {
+        "question": "Нужен курьер",
+        "expected": "доставка",
+        "actual": "error",
+        "category": "синоним",
+        "correct": false,
+        "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x102c70af0>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+      },
+      {
+        "question": "Пополнить счет",
+        "expected": "баланс",
+        "actual": "error",
+        "category": "синоним",
+        "correct": false,
+        "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x102c70d10>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+      },
+      {
+        "question": "Платеж не проходит",
+        "expected": "баланс",
+        "actual": "error",
+        "category": "синоним",
+        "correct": false,
+        "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x102c70f30>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+      },
+      {
+        "question": "Программа глючит",
+        "expected": "приложение",
+        "actual": "error",
+        "category": "синоним",
+        "correct": false,
+        "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x102967df0>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+      },
+      {
+        "question": "Софт не запускается",
+        "expected": "приложение",
+        "actual": "error",
+        "category": "синоним",
+        "correct": false,
+        "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x102967ce0>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+      },
+      {
+        "question": "А что за наценка такая?",
+        "expected": "наценка",
+        "actual": "error",
+        "category": "разговорный",
+        "correct": false,
+        "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1029679b0>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+      },
+      {
+        "question": "Можно ли заказать доставку?",
+        "expected": "доставка",
+        "actual": "error",
+        "category": "разговорный",
+        "correct": false,
+        "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x102967680>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+      },
+      {
+        "question": "Как бы пополнить баланс?",
+        "expected": "баланс",
+        "actual": "error",
+        "category": "разговорный",
+        "correct": false,
+        "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1029678a0>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+      },
+      {
+        "question": "У меня приложение виснет",
+        "expected": "приложение",
+        "actual": "error",
+        "category": "разговорный",
+        "correct": false,
+        "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x102967460>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+      },
+      {
+        "question": "Что такое наценкa?",
+        "expected": "наценка",
+        "actual": "error",
+        "category": "опечатка",
+        "correct": false,
+        "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x102967350>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+      },
+      {
+        "question": "Как заказать доставкy?",
+        "expected": "доставка",
+        "actual": "error",
+        "category": "опечатка",
+        "correct": false,
+        "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x102966f10>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+      },
+      {
+        "question": "Как пополнить балaнс?",
+        "expected": "баланс",
+        "actual": "error",
+        "category": "опечатка",
+        "correct": false,
+        "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x102966be0>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+      },
+      {
+        "question": "Приложениe не работает",
+        "expected": "приложение",
+        "actual": "error",
+        "category": "опечатка",
+        "correct": false,
+        "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x102966cf0>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+      },
+      {
+        "question": "Наценка и доставка",
+        "expected": "наценка",
+        "actual": "error",
+        "category": "смешанный",
+        "correct": false,
+        "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1029669c0>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+      },
+      {
+        "question": "Баланс и приложение",
+        "expected": "баланс",
+        "actual": "error",
+        "category": "смешанный",
+        "correct": false,
+        "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1029667a0>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+      },
+      {
+        "question": "Как вызвать такси?",
+        "expected": "fallback",
+        "actual": "error",
+        "category": "неизвестный",
+        "correct": false,
+        "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x102c84160>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+      },
+      {
+        "question": "Сколько стоит поездка?",
+        "expected": "fallback",
+        "actual": "error",
+        "category": "неизвестный",
+        "correct": false,
+        "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x102c84380>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+      },
+      {
+        "question": "Где мой водитель?",
+        "expected": "fallback",
+        "actual": "error",
+        "category": "неизвестный",
+        "correct": false,
+        "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x102c845a0>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+      }
+    ]
+  }
+}

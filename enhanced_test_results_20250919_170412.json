@@ -1,0 +1,466 @@
+{
+  "timestamp": "20250919_170412",
+  "model_version": "3.0.0",
+  "local_results": {
+    "accuracy": 100.0,
+    "total_tests": 25,
+    "results": [
+      {
+        "question": "Что такое наценка?",
+        "expected": "наценка",
+        "actual": "наценка",
+        "category": "основной",
+        "correct": true,
+        "confidence": 0.9,
+        "source": "direct",
+        "answer": "Здравствуйте. Наценка является частью тарифной сис..."
+      },
+      {
+        "question": "Как заказать доставку?",
+        "expected": "доставка",
+        "actual": "доставка",
+        "category": "основной",
+        "correct": true,
+        "confidence": 0.9,
+        "source": "direct",
+        "answer": "Для заказа доставки через приложение APARU: 1) Отк..."
+      },
+      {
+        "question": "Как пополнить баланс?",
+        "expected": "баланс",
+        "actual": "баланс",
+        "category": "основной",
+        "correct": true,
+        "confidence": 0.9,
+        "source": "direct",
+        "answer": "Для пополнения баланса в приложении APARU: 1) Откр..."
+      },
+      {
+        "question": "Приложение не работает",
+        "expected": "приложение",
+        "actual": "приложение",
+        "category": "основной",
+        "correct": true,
+        "confidence": 0.9,
+        "source": "direct",
+        "answer": "Если приложение APARU не работает: 1) Перезапустит..."
+      },
+      {
+        "question": "Почему так дорого?",
+        "expected": "наценка",
+        "actual": "наценка",
+        "category": "синоним",
+        "correct": true,
+        "confidence": 0.9,
+        "source": "direct",
+        "answer": "Здравствуйте. Наценка является частью тарифной сис..."
+      },
+      {
+        "question": "Откуда доплата?",
+        "expected": "наценка",
+        "actual": "наценка",
+        "category": "синоним",
+        "correct": true,
+        "confidence": 0.9,
+        "source": "direct",
+        "answer": "Здравствуйте. Наценка является частью тарифной сис..."
+      },
+      {
+        "question": "Как отправить посылку?",
+        "expected": "доставка",
+        "actual": "доставка",
+        "category": "синоним",
+        "correct": true,
+        "confidence": 0.9,
+        "source": "direct",
+        "answer": "Для заказа доставки через приложение APARU: 1) Отк..."
+      },
+      {
+        "question": "Нужен курьер",
+        "expected": "доставка",
+        "actual": "доставка",
+        "category": "синоним",
+        "correct": true,
+        "confidence": 0.9,
+        "source": "direct",
+        "answer": "Для заказа доставки через приложение APARU: 1) Отк..."
+      },
+      {
+        "question": "Пополнить счет",
+        "expected": "баланс",
+        "actual": "баланс",
+        "category": "синоним",
+        "correct": true,
+        "confidence": 0.9,
+        "source": "direct",
+        "answer": "Для пополнения баланса в приложении APARU: 1) Откр..."
+      },
+      {
+        "question": "Платеж не проходит",
+        "expected": "баланс",
+        "actual": "баланс",
+        "category": "синоним",
+        "correct": true,
+        "confidence": 0.9,
+        "source": "direct",
+        "answer": "Для пополнения баланса в приложении APARU: 1) Откр..."
+      },
+      {
+        "question": "Программа глючит",
+        "expected": "приложение",
+        "actual": "приложение",
+        "category": "синоним",
+        "correct": true,
+        "confidence": 0.9,
+        "source": "direct",
+        "answer": "Если приложение APARU не работает: 1) Перезапустит..."
+      },
+      {
+        "question": "Софт не запускается",
+        "expected": "приложение",
+        "actual": "приложение",
+        "category": "синоним",
+        "correct": true,
+        "confidence": 0.9,
+        "source": "direct",
+        "answer": "Если приложение APARU не работает: 1) Перезапустит..."
+      },
+      {
+        "question": "А что за наценка такая?",
+        "expected": "наценка",
+        "actual": "наценка",
+        "category": "разговорный",
+        "correct": true,
+        "confidence": 0.9,
+        "source": "direct",
+        "answer": "Здравствуйте. Наценка является частью тарифной сис..."
+      },
+      {
+        "question": "Можно ли заказать доставку?",
+        "expected": "доставка",
+        "actual": "доставка",
+        "category": "разговорный",
+        "correct": true,
+        "confidence": 0.9,
+        "source": "direct",
+        "answer": "Для заказа доставки через приложение APARU: 1) Отк..."
+      },
+      {
+        "question": "Как бы пополнить баланс?",
+        "expected": "баланс",
+        "actual": "баланс",
+        "category": "разговорный",
+        "correct": true,
+        "confidence": 0.9,
+        "source": "direct",
+        "answer": "Для пополнения баланса в приложении APARU: 1) Откр..."
+      },
+      {
+        "question": "У меня приложение виснет",
+        "expected": "приложение",
+        "actual": "приложение",
+        "category": "разговорный",
+        "correct": true,
+        "confidence": 0.9,
+        "source": "direct",
+        "answer": "Если приложение APARU не работает: 1) Перезапустит..."
+      },
+      {
+        "question": "Что такое наценкa?",
+        "expected": "наценка",
+        "actual": "наценка",
+        "category": "опечатка",
+        "correct": true,
+        "confidence": 1.0,
+        "source": "fuzzy",
+        "answer": "Здравствуйте. Наценка является частью тарифной сис..."
+      },
+      {
+        "question": "Как заказать доставкy?",
+        "expected": "доставка",
+        "actual": "доставка",
+        "category": "опечатка",
+        "correct": true,
+        "confidence": 0.9,
+        "source": "direct",
+        "answer": "Для заказа доставки через приложение APARU: 1) Отк..."
+      },
+      {
+        "question": "Как пополнить балaнс?",
+        "expected": "баланс",
+        "actual": "баланс",
+        "category": "опечатка",
+        "correct": true,
+        "confidence": 0.9,
+        "source": "direct",
+        "answer": "Для пополнения баланса в приложении APARU: 1) Откр..."
+      },
+      {
+        "question": "Приложениe не работает",
+        "expected": "приложение",
+        "actual": "приложение",
+        "category": "опечатка",
+        "correct": true,
+        "confidence": 0.9,
+        "source": "direct",
+        "answer": "Если приложение APARU не работает: 1) Перезапустит..."
+      },
+      {
+        "question": "Наценка и доставка",
+        "expected": "наценка",
+        "actual": "наценка",
+        "category": "смешанный",
+        "correct": true,
+        "confidence": 0.9,
+        "source": "direct",
+        "answer": "Здравствуйте. Наценка является частью тарифной сис..."
+      },
+      {
+        "question": "Баланс и приложение",
+        "expected": "баланс",
+        "actual": "баланс",
+        "category": "смешанный",
+        "correct": true,
+        "confidence": 0.9,
+        "source": "direct",
+        "answer": "Для пополнения баланса в приложении APARU: 1) Откр..."
+      },
+      {
+        "question": "Как вызвать такси?",
+        "expected": "unknown",
+        "actual": "unknown",
+        "category": "неизвестный",
+        "correct": true,
+        "confidence": 0.0,
+        "source": "fallback",
+        "answer": "Извините, не могу найти ответ на ваш вопрос. Обрат..."
+      },
+      {
+        "question": "Сколько стоит поездка?",
+        "expected": "unknown",
+        "actual": "unknown",
+        "category": "неизвестный",
+        "correct": true,
+        "confidence": 0.0,
+        "source": "fallback",
+        "answer": "Извините, не могу найти ответ на ваш вопрос. Обрат..."
+      },
+      {
+        "question": "Где мой водитель?",
+        "expected": "unknown",
+        "actual": "unknown",
+        "category": "неизвестный",
+        "correct": true,
+        "confidence": 0.0,
+        "source": "fallback",
+        "answer": "Извините, не могу найти ответ на ваш вопрос. Обрат..."
+      }
+    ]
+  },
+  "api_results": {
+    "accuracy": 0.0,
+    "total_tests": 25,
+    "results": [
+      {
+        "question": "Что такое наценка?",
+        "expected": "наценка",
+        "actual": "error",
+        "category": "основной",
+        "correct": false,
+        "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x10a6512b0>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+      },
+      {
+        "question": "Как заказать доставку?",
+        "expected": "доставка",
+        "actual": "error",
+        "category": "основной",
+        "correct": false,
+        "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x10a668190>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+      },
+      {
+        "question": "Как пополнить баланс?",
+        "expected": "баланс",
+        "actual": "error",
+        "category": "основной",
+        "correct": false,
+        "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x10a668a50>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+      },
+      {
+        "question": "Приложение не работает",
+        "expected": "приложение",
+        "actual": "error",
+        "category": "основной",
+        "correct": false,
+        "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x10a5fa060>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+      },
+      {
+        "question": "Почему так дорого?",
+        "expected": "наценка",
+        "actual": "error",
+        "category": "синоним",
+        "correct": false,
+        "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x10a5f9a70>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+      },
+      {
+        "question": "Откуда доплата?",
+        "expected": "наценка",
+        "actual": "error",
+        "category": "синоним",
+        "correct": false,
+        "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x10a6297f0>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+      },
+      {
+        "question": "Как отправить посылку?",
+        "expected": "доставка",
+        "actual": "error",
+        "category": "синоним",
+        "correct": false,
+        "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x10a593790>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+      },
+      {
+        "question": "Нужен курьер",
+        "expected": "доставка",
+        "actual": "error",
+        "category": "синоним",
+        "correct": false,
+        "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x10a593020>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+      },
+      {
+        "question": "Пополнить счет",
+        "expected": "баланс",
+        "actual": "error",
+        "category": "синоним",
+        "correct": false,
+        "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x10a591260>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+      },
+      {
+        "question": "Платеж не проходит",
+        "expected": "баланс",
+        "actual": "error",
+        "category": "синоним",
+        "correct": false,
+        "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x10a668160>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+      },
+      {
+        "question": "Программа глючит",
+        "expected": "приложение",
+        "actual": "error",
+        "category": "синоним",
+        "correct": false,
+        "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x10a668380>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+      },
+      {
+        "question": "Софт не запускается",
+        "expected": "приложение",
+        "actual": "error",
+        "category": "синоним",
+        "correct": false,
+        "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x10a6685a0>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+      },
+      {
+        "question": "А что за наценка такая?",
+        "expected": "наценка",
+        "actual": "error",
+        "category": "разговорный",
+        "correct": false,
+        "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x10a6687c0>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+      },
+      {
+        "question": "Можно ли заказать доставку?",
+        "expected": "доставка",
+        "actual": "error",
+        "category": "разговорный",
+        "correct": false,
+        "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x10a6689e0>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+      },
+      {
+        "question": "Как бы пополнить баланс?",
+        "expected": "баланс",
+        "actual": "error",
+        "category": "разговорный",
+        "correct": false,
+        "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x10a668c00>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+      },
+      {
+        "question": "У меня приложение виснет",
+        "expected": "приложение",
+        "actual": "error",
+        "category": "разговорный",
+        "correct": false,
+        "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x10a668e20>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+      },
+      {
+        "question": "Что такое наценкa?",
+        "expected": "наценка",
+        "actual": "error",
+        "category": "опечатка",
+        "correct": false,
+        "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x10a669040>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+      },
+      {
+        "question": "Как заказать доставкy?",
+        "expected": "доставка",
+        "actual": "error",
+        "category": "опечатка",
+        "correct": false,
+        "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x10a669260>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+      },
+      {
+        "question": "Как пополнить балaнс?",
+        "expected": "баланс",
+        "actual": "error",
+        "category": "опечатка",
+        "correct": false,
+        "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x10a669480>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+      },
+      {
+        "question": "Приложениe не работает",
+        "expected": "приложение",
+        "actual": "error",
+        "category": "опечатка",
+        "correct": false,
+        "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x10a591260>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+      },
+      {
+        "question": "Наценка и доставка",
+        "expected": "наценка",
+        "actual": "error",
+        "category": "смешанный",
+        "correct": false,
+        "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x10a593130>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+      },
+      {
+        "question": "Баланс и приложение",
+        "expected": "баланс",
+        "actual": "error",
+        "category": "смешанный",
+        "correct": false,
+        "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x10a593350>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+      },
+      {
+        "question": "Как вызвать такси?",
+        "expected": "unknown",
+        "actual": "error",
+        "category": "неизвестный",
+        "correct": false,
+        "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x10a592e00>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+      },
+      {
+        "question": "Сколько стоит поездка?",
+        "expected": "unknown",
+        "actual": "error",
+        "category": "неизвестный",
+        "correct": false,
+        "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x10a593f00>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+      },
+      {
+        "question": "Где мой водитель?",
+        "expected": "unknown",
+        "actual": "error",
+        "category": "неизвестный",
+        "correct": false,
+        "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x10a593bd0>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+      }
+    ]
+  }
+}
