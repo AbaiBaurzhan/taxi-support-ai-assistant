@@ -53,7 +53,7 @@ class HealthResponse(BaseModel):
 class HybridAIClient:
     def __init__(self):
         # URL локальной LLM модели через ngrok
-        self.local_model_url = os.environ.get("LOCAL_MODEL_URL", "https://32f43b95cbea.ngrok-free.app")
+        self.local_model_url = os.environ.get("LOCAL_MODEL_URL", "https://d7278873d00c.ngrok-free.app")
         self.model_name = "aparu-senior-ai"
         self.local_available = False
         
