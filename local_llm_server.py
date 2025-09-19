@@ -113,26 +113,26 @@ class LocalLLMClient:
 - "Пополнить баланс: Профиль → Пополнить → способ оплаты"
 - "Приложение не работает? Перезапустите и обновите" """
             
-            # СУПЕР-ОПТИМИЗИРОВАННЫЕ параметры для максимальной скорости
+            # УЛЬТРА-БЫСТРЫЕ параметры для максимальной скорости
             payload = {
                 "model": self.model_name,
                 "prompt": f"{system_prompt}\n\n{question}:",
                 "stream": False,
                 "options": {
-                    "temperature": 0.1,  # Очень низкая температура
-                    "num_predict": 100,  # Очень короткие ответы
-                    "num_ctx": 256,      # Минимальный контекст
+                    "temperature": 0.05,  # Минимальная температура
+                    "num_predict": 50,    # Очень короткие ответы
+                    "num_ctx": 128,       # Минимальный контекст
                     "repeat_penalty": 1.0,
-                    "top_k": 10,         # Минимальный выбор
-                    "top_p": 0.8,        # Минимальная вероятность
-                    "stop": ["\n", ".", "!", "?"]  # Ранние стоп-слова
+                    "top_k": 5,           # Минимальный выбор
+                    "top_p": 0.7,         # Минимальная вероятность
+                    "stop": ["\n", ".", "!", "?", "Ответ:"]  # Ранние стоп-слова
                 }
             }
             
             response = requests.post(
                 f"{self.ollama_url}/api/generate",
                 json=payload,
-                timeout=20  # Максимально короткий таймаут
+                timeout=15  # Максимально короткий таймаут
             )
             
             if response.status_code == 200:
@@ -144,7 +144,7 @@ class LocalLLMClient:
                         "answer": answer,
                         "category": "llm_generated",
                         "confidence": 0.95,
-                        "source": "super_optimized_llm"
+                        "source": "ultra_fast_llm"
                     }
             
             logger.warning(f"⚠️ LLM вернул неожиданный ответ: {response.status_code}")
