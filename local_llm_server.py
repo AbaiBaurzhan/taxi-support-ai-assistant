@@ -150,6 +150,9 @@ class LocalLLMClient:
             logger.warning(f"⚠️ LLM вернул неожиданный ответ: {response.status_code}")
             return None
             
+        except requests.exceptions.Timeout:
+            logger.error(f"❌ LLM таймаут (>20с)")
+            return None
         except Exception as e:
             logger.error(f"❌ Ошибка запроса к LLM: {e}")
             return None
