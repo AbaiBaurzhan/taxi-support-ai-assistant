@@ -1,343 +1,223 @@
 #!/usr/bin/env python3
 """
-🚀 APARU Local LLM Server
-Запускает локальный LLM сервер с туннелем для доступа из интернета
+🚀 ЛОКАЛЬНЫЙ СЕРВЕР С LLM МОДЕЛЬЮ
+Принимает запросы от Railway и обрабатывает их через LLM
 """
 
-import os
-import sys
-import subprocess
-import time
+import json
+import re
+import logging
 import requests
-import threading
-from pathlib import Path
+from typing import Dict, Any, List, Optional
+from datetime import datetime
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+import os
 
-class LocalLLMServer:
+# Настройка логирования
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+app = FastAPI(title="APARU Local LLM Server", version="3.1.0")
+
+# CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Модели
+class ChatRequest(BaseModel):
+    text: str
+    user_id: str
+    locale: str = "ru"
+
+class ChatResponse(BaseModel):
+    response: str
+    intent: str
+    confidence: float
+    source: str
+    timestamp: str
+    suggestions: List[str] = []
+
+class HealthResponse(BaseModel):
+    status: str
+    architecture: str = "local_llm"
+    timestamp: str
+
+class LocalLLMClient:
     def __init__(self):
-        self.llm_process = None
-        self.tunnel_process = None
-        self.tunnel_url = None
+        self.ollama_url = "http://localhost:11434"
+        self.model_name = "aparu-senior-ai"
+        self.llm_available = False
         
-    def print_banner(self):
-        print("=" * 70)
-        print("🤖 APARU Local LLM Server")
-        print("=" * 70)
-        print("📡 Запускает локальный LLM с доступом из интернета")
-        print("🌐 Для использования в Railway production")
-        print("=" * 70)
+        # Проверяем доступность Ollama
+        self._check_ollama()
         
-    def check_ollama(self):
-        """Проверяет наличие Ollama"""
-        print("🔍 Проверяю Ollama...")
-        
+    def _check_ollama(self):
+        """Проверяет доступность Ollama"""
         try:
-            # Проверяем установку
-            result = subprocess.run(["ollama", "--version"], 
-                                  capture_output=True, text=True, timeout=5)
-            if result.returncode == 0:
-                print("✅ Ollama установлен")
-                return True
+            response = requests.get(f"{self.ollama_url}/api/tags", timeout=5)
+            if response.status_code == 200:
+                self.llm_available = True
+                logger.info("✅ Ollama доступен")
             else:
-                print("❌ Ollama не найден")
-                return False
-        except (subprocess.TimeoutExpired, FileNotFoundError):
-            print("❌ Ollama не установлен")
-            return False
-            
-    def install_ollama(self):
-        """Устанавливает Ollama"""
-        print("📦 Устанавливаю Ollama...")
-        
-        try:
-            # Скачиваем и устанавливаем Ollama
-            install_script = """
-            curl -fsSL https://ollama.ai/install.sh | sh
-            """
-            
-            result = subprocess.run(install_script, shell=True, 
-                                  capture_output=True, text=True)
-            if result.returncode == 0:
-                print("✅ Ollama установлен")
-                return True
-            else:
-                print(f"❌ Ошибка установки: {result.stderr}")
-                return False
+                logger.warning("⚠️ Ollama недоступен")
         except Exception as e:
-            print(f"❌ Ошибка: {e}")
-            return False
-            
-    def download_model(self, model_name="llama2"):
-        """Загружает модель"""
-        print(f"📥 Загружаю модель {model_name}...")
+            logger.warning(f"⚠️ Не удалось подключиться к Ollama: {e}")
+    
+    def get_answer(self, question: str) -> Dict[str, Any]:
+        """Получает ответ от LLM модели"""
+        start_time = datetime.now()
         
-        try:
-            result = subprocess.run(["ollama", "pull", model_name], 
-                                  capture_output=True, text=True)
-            if result.returncode == 0:
-                print(f"✅ Модель {model_name} загружена")
-                return True
-            else:
-                print(f"❌ Ошибка загрузки: {result.stderr}")
-                return False
-        except Exception as e:
-            print(f"❌ Ошибка: {e}")
-            return False
-            
-    def start_ollama_server(self):
-        """Запускает Ollama сервер"""
-        print("🚀 Запускаю Ollama сервер...")
-        
-        try:
-            self.llm_process = subprocess.Popen(
-                ["ollama", "serve"],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True
-            )
-            
-            # Ждем запуска
-            time.sleep(3)
-            
-            # Проверяем доступность
+        # Используем LLM модель
+        if self.llm_available:
             try:
-                response = requests.get("http://localhost:11434/api/tags", timeout=5)
-                if response.status_code == 200:
-                    print("✅ Ollama сервер запущен на http://localhost:11434")
-                    return True
-                else:
-                    print("❌ Ollama сервер не отвечает")
-                    return False
-            except requests.exceptions.RequestException:
-                print("❌ Ollama сервер недоступен")
-                return False
-                
-        except Exception as e:
-            print(f"❌ Ошибка запуска: {e}")
-            return False
-            
-    def install_ngrok(self):
-        """Устанавливает ngrok"""
-        print("📦 Проверяю ngrok...")
+                logger.info("🧠 Запрашиваем ответ от LLM модели...")
+                response = self._query_llm(question)
+                if response and response.get('response'):
+                    processing_time = (datetime.now() - start_time).total_seconds()
+                    logger.info(f"✅ LLM ответ получен за {processing_time:.2f}с")
+                    return response
+            except Exception as e:
+                logger.error(f"❌ Ошибка при запросе к LLM: {e}")
         
+        # Fallback к простому поиску
+        logger.info("🔄 Fallback к простому поиску...")
+        return self._simple_search(question)
+    
+    def _query_llm(self, question: str) -> Dict[str, Any]:
+        """Запрашивает ответ от LLM модели"""
         try:
-            result = subprocess.run(["ngrok", "version"], 
-                                  capture_output=True, text=True, timeout=5)
-            if result.returncode == 0:
-                print("✅ ngrok установлен")
-                return True
-            else:
-                print("❌ ngrok не найден")
-                return False
-        except (subprocess.TimeoutExpired, FileNotFoundError):
-            print("❌ ngrok не установлен")
-            return False
+            # Системный промпт для APARU
+            system_prompt = """Ты — AI-ассистент службы поддержки такси-агрегатора APARU. 
+Отвечай на вопросы пользователей о:
+- Наценках и тарифах
+- Доставке и курьерских услугах  
+- Балансе и платежах
+- Проблемах с приложением
+
+Отвечай кратко, вежливо и по существу. Если не знаешь ответ, предложи обратиться в службу поддержки."""
             
-    def start_tunnel(self):
-        """Запускает туннель"""
-        print("🌐 Запускаю туннель...")
-        
-        try:
-            # Запускаем ngrok туннель
-            self.tunnel_process = subprocess.Popen(
-                ["ngrok", "http", "11434", "--log=stdout"],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True
-            )
-            
-            # Ждем запуска
-            time.sleep(3)
-            
-            # Получаем URL туннеля
-            try:
-                response = requests.get("http://localhost:4040/api/tunnels", timeout=5)
-                if response.status_code == 200:
-                    data = response.json()
-                    tunnels = data.get("tunnels", [])
-                    if tunnels:
-                        self.tunnel_url = tunnels[0]["public_url"]
-                        print(f"✅ Туннель запущен: {self.tunnel_url}")
-                        return True
-                    else:
-                        print("❌ Туннель не создан")
-                        return False
-                else:
-                    print("❌ Не удалось получить URL туннеля")
-                    return False
-            except requests.exceptions.RequestException:
-                print("❌ Ошибка получения URL туннеля")
-                return False
-                
-        except Exception as e:
-            print(f"❌ Ошибка запуска туннеля: {e}")
-            return False
-            
-    def test_llm(self):
-        """Тестирует LLM через туннель"""
-        print("🧪 Тестирую LLM...")
-        
-        if not self.tunnel_url:
-            print("❌ Туннель не запущен")
-            return False
-            
-        try:
-            test_payload = {
-                "model": "llama2",
-                "prompt": "Привет! Как дела?",
+            payload = {
+                "model": self.model_name,
+                "prompt": f"{system_prompt}\n\nВопрос: {question}",
                 "stream": False,
                 "options": {
                     "temperature": 0.7,
-                    "max_tokens": 50
+                    "max_tokens": 500
                 }
             }
             
             response = requests.post(
-                f"{self.tunnel_url}/api/generate",
-                json=test_payload,
-                timeout=30
+                f"{self.ollama_url}/api/generate",
+                json=payload,
+                timeout=120
             )
             
             if response.status_code == 200:
-                result = response.json()
-                answer = result.get("response", "")
-                print(f"✅ LLM отвечает: {answer[:50]}...")
-                return True
-            else:
-                print(f"❌ Ошибка LLM: {response.status_code}")
-                return False
+                data = response.json()
+                answer = data.get('response', '').strip()
                 
+                if answer:
+                    return {
+                        "answer": answer,
+                        "category": "llm_generated",
+                        "confidence": 0.9,
+                        "source": "local_llm"
+                    }
+            
+            logger.warning(f"⚠️ LLM вернул неожиданный ответ: {response.status_code}")
+            return None
+            
         except Exception as e:
-            print(f"❌ Ошибка тестирования: {e}")
-            return False
-            
-    def update_railway_config(self):
-        """Обновляет конфигурацию для Railway"""
-        print("⚙️ Обновляю конфигурацию...")
+            logger.error(f"❌ Ошибка запроса к LLM: {e}")
+            return None
+    
+    def _simple_search(self, question: str) -> Dict[str, Any]:
+        """Простой поиск по ключевым словам (fallback)"""
+        question_lower = question.lower()
         
-        if not self.tunnel_url:
-            print("❌ Туннель не запущен")
-            return False
-            
-        # Создаем файл конфигурации
-        config_content = f"""# APARU Local LLM Configuration
-LLM_URL={self.tunnel_url}
-LLM_MODEL=llama2
-LLM_ENABLED=true
-"""
+        # Простая база знаний
+        simple_kb = {
+            "наценка": "Наценка - это дополнительная плата за повышенный спрос. Она помогает привлечь больше водителей и сократить время ожидания.",
+            "доставка": "Для заказа доставки: откройте приложение → выберите 'Доставка' → укажите адреса → подтвердите заказ.",
+            "баланс": "Для пополнения баланса: откройте приложение → 'Профиль' → 'Пополнить баланс' → выберите способ оплаты.",
+            "приложение": "Если приложение не работает: перезапустите, проверьте интернет, обновите до последней версии."
+        }
         
-        try:
-            with open(".env.local", "w") as f:
-                f.write(config_content)
-            print("✅ Конфигурация сохранена в .env.local")
-            return True
-        except Exception as e:
-            print(f"❌ Ошибка сохранения: {e}")
-            return False
-            
-    def cleanup(self):
-        """Останавливает все процессы"""
-        print("\n🛑 Останавливаю процессы...")
+        # Поиск по ключевым словам
+        for keyword, answer in simple_kb.items():
+            if keyword in question_lower:
+                return {
+                    "answer": answer,
+                    "category": keyword,
+                    "confidence": 0.8,
+                    "source": "simple_search"
+                }
         
-        if self.tunnel_process:
-            self.tunnel_process.terminate()
-            print("⏹️ Туннель остановлен")
-            
-        if self.llm_process:
-            self.llm_process.terminate()
-            print("⏹️ Ollama остановлен")
-            
-    def run(self):
-        """Основная функция"""
-        self.print_banner()
-        
-        print("\n🎯 Выберите действие:")
-        print("1. 🚀 Полная настройка (Ollama + туннель)")
-        print("2. 🤖 Только Ollama")
-        print("3. 🌐 Только туннель")
-        print("4. 🧪 Тест LLM")
-        print("5. ⚙️ Обновить конфигурацию")
-        print("0. ❌ Выход")
-        
-        choice = input("\n👉 Введите номер (0-5): ").strip()
-        
-        if choice == "1":
-            # Полная настройка
-            if not self.check_ollama():
-                if not self.install_ollama():
-                    return
-                    
-            if not self.download_model():
-                return
-                
-            if not self.start_ollama_server():
-                return
-                
-            if not self.install_ngrok():
-                print("📝 Установите ngrok: https://ngrok.com/download")
-                return
-                
-            if not self.start_tunnel():
-                return
-                
-            if not self.test_llm():
-                return
-                
-            if not self.update_railway_config():
-                return
-                
-            print("\n🎉 Локальный LLM сервер готов!")
-            print(f"🌐 URL: {self.tunnel_url}")
-            print("⏹️ Нажмите Ctrl+C для остановки")
-            
-            try:
-                while True:
-                    time.sleep(1)
-            except KeyboardInterrupt:
-                pass
-                
-        elif choice == "2":
-            # Только Ollama
-            if not self.check_ollama():
-                if not self.install_ollama():
-                    return
-                    
-            if not self.download_model():
-                return
-                
-            if not self.start_ollama_server():
-                return
-                
-            print("\n✅ Ollama запущен локально")
-            print("🌐 Доступен на http://localhost:11434")
-            
-        elif choice == "3":
-            # Только туннель
-            if not self.start_tunnel():
-                return
-                
-            print(f"\n✅ Туннель запущен: {self.tunnel_url}")
-            
-        elif choice == "4":
-            # Тест
-            if not self.test_llm():
-                return
-                
-        elif choice == "5":
-            # Конфигурация
-            if not self.update_railway_config():
-                return
-                
-        elif choice == "0":
-            print("👋 До свидания!")
-            
-        else:
-            print("❌ Неверный выбор!")
-            
-        self.cleanup()
+        # Fallback
+        return {
+            "answer": "Извините, не могу найти ответ на ваш вопрос. Обратитесь в службу поддержки.",
+            "category": "unknown",
+            "confidence": 0.0,
+            "source": "fallback"
+        }
 
-def main():
-    server = LocalLLMServer()
-    server.run()
+# Глобальный экземпляр
+local_llm_client = LocalLLMClient()
+
+@app.get("/")
+async def root():
+    return {
+        "message": "APARU Local LLM Server", 
+        "status": "running", 
+        "version": "3.1.0",
+        "architecture": "local_llm",
+        "llm_available": local_llm_client.llm_available
+    }
+
+@app.get("/health", response_model=HealthResponse)
+async def health():
+    return HealthResponse(
+        status="healthy",
+        architecture="local_llm",
+        timestamp=datetime.now().isoformat()
+    )
+
+@app.post("/chat", response_model=ChatResponse)
+async def chat(request: ChatRequest):
+    """Основной эндпоинт для чата"""
+    try:
+        result = local_llm_client.get_answer(request.text)
+        
+        return ChatResponse(
+            response=result["answer"],
+            intent=result["category"],
+            confidence=result["confidence"],
+            source=result["source"],
+            timestamp=datetime.now().isoformat(),
+            suggestions=[]
+        )
+    
+    except Exception as e:
+        logger.error(f"Ошибка в /chat: {e}")
+        return ChatResponse(
+            response="Извините, произошла ошибка при обработке вашего запроса.",
+            intent="error",
+            confidence=0.0,
+            source="error",
+            timestamp=datetime.now().isoformat(),
+            suggestions=[]
+        )
 
 if __name__ == "__main__":
-    main()
+    import uvicorn
+    
+    # Локальный сервер на порту 8001
+    port = int(os.environ.get("LOCAL_PORT", 8001))
+    uvicorn.run(app, host="0.0.0.0", port=port)
