@@ -12,19 +12,22 @@ from langdetect import detect
 from langdetect.lang_detect_exception import LangDetectException
 from aparu_enhanced_client import aparu_enhanced_client
 try:
-    from railway_optimized_client import get_enhanced_answer
+    from morphological_search_client import get_enhanced_answer
 except ImportError:
     try:
-        from maximum_accuracy_client import get_enhanced_answer
+        from railway_optimized_client import get_enhanced_answer
     except ImportError:
         try:
-            from ultimate_search_client import get_enhanced_answer
+            from maximum_accuracy_client import get_enhanced_answer
         except ImportError:
             try:
-                from senior_ai_integrated_client import get_enhanced_answer
+                from ultimate_search_client import get_enhanced_answer
             except ImportError:
-                # Fallback к простой версии для Railway
-                from railway_simple_client import get_enhanced_answer
+                try:
+                    from senior_ai_integrated_client import get_enhanced_answer
+                except ImportError:
+                    # Fallback к простой версии для Railway
+                    from railway_simple_client import get_enhanced_answer
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
