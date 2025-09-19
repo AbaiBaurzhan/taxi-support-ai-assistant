@@ -11,6 +11,7 @@ from pydantic import BaseModel
 from langdetect import detect
 from langdetect.lang_detect_exception import LangDetectException
 from aparu_enhanced_client import aparu_enhanced_client
+from senior_ai_integrated_client import get_enhanced_answer
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -249,23 +250,18 @@ async def chat(request: ChatRequest):
     
     # Обработка по интенту
     if intent == "faq":
-        # Сначала используем улучшенную систему поиска APARU
+        # Используем улучшенную систему поиска с вариациями вопросов
         try:
-            from enhanced_aparu_search import get_enhanced_aparu_answer
-            response_text = get_enhanced_aparu_answer(processed_text)
-            
-            # Если система дала хороший ответ, используем его
-            if "извините" not in response_text.lower() and "не уверен" not in response_text.lower():
-                source = "kb"
-                confidence = 0.9
-            else:
-                # Если не найден, используем обученную модель
-                prompt = aparu_enhanced_client.create_aparu_context_prompt(processed_text, intent, final_locale)
-                response_text = aparu_enhanced_client.generate_response(prompt)
+            response_text = get_enhanced_answer(processed_text)
+            source = "kb"
+            confidence = 0.9
+            logger.info(f"✅ Ответ из улучшенной системы: {response_text[:100]}...")
         except ImportError:
             # Fallback к обученной модели
             prompt = aparu_enhanced_client.create_aparu_context_prompt(processed_text, intent, final_locale)
             response_text = aparu_enhanced_client.generate_response(prompt)
+            source = "llm"
+            confidence = 0.8
     
     elif intent == "ride_status":
         ride_data = get_ride_status(request.user_id)

@@ -15,7 +15,7 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 class APARUEnhancedClient:
-    def __init__(self, model_name: str = "aparu-support", use_ollama: bool = True):
+    def __init__(self, model_name: str = "aparu-advanced", use_ollama: bool = True):
         self.use_ollama = use_ollama
         self.model_name = model_name
         self.knowledge_base = None
