@@ -1,47 +1,26 @@
 #!/usr/bin/env python3
 """
-🚀 УЛУЧШЕННАЯ ИИ МОДЕЛЬ APARU
-Использует все доступные библиотеки для максимальной точности
+🎯 УЛУЧШЕННАЯ СИСТЕМА ВЫБОРА ОТВЕТОВ С МОРФОЛОГИЕЙ
 """
 
 import json
-import re
 import logging
+import requests
 from typing import Dict, Any, List, Optional
 from datetime import datetime
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 import os
-
-# ML библиотеки
-import nltk
-from nltk.corpus import stopwords
-from nltk.stem import SnowballStemmer
-from fuzzywuzzy import fuzz, process
-import pandas as pd
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
-import numpy as np
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Загружаем NLTK данные
-try:
-    nltk.data.find('corpora/stopwords')
-except LookupError:
-    nltk.download('stopwords')
+app = FastAPI(title="APARU Enhanced Answer Selection", version="10.0.0")
 
-try:
-    nltk.data.find('tokenizers/punkt')
-except LookupError:
-    nltk.download('punkt')
-
-app = FastAPI(title="APARU Enhanced AI Assistant", version="3.0.0")
-
-# CORS
+# CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -66,244 +45,419 @@ class ChatResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     status: str
-    architecture: str = "enhanced"
+    architecture: str = "enhanced_answer_selection"
     timestamp: str
+    llm_available: bool = False
 
-# Расширенная база знаний
-ENHANCED_KB = {
-    "наценка": {
-        "answer": "Здравствуйте. Наценка является частью тарифной системы Компании и её наличие регулируется объёмом спроса на рассматриваемый момент. В вашем случае наблюдался повышенный спрос на услуги из-за погодных условий. Данная мера необходима для привлечения дополнительных водителей на выполнение заказов, что в свою очередь сокращает время ожидания для вас. Стоимость оплаты поездки рассчитывается согласно показаниям таксометра. Благодарим за обращение! С уважением, команда АПАРУ.",
-        "keywords": ["наценка", "наценки", "наценку", "наценкой", "дорого", "подорожание", "повышение", "доплата", "почему так дорого", "откуда доплата", "повысили цену", "зачем доплачивать"],
-        "synonyms": ["дорого", "подорожание", "повышение", "доплата", "повысили", "подняли цену"],
-        "variations": ["наценкa", "наценкy", "наценкi", "наценкe", "наценкoй"]
-    },
-    "доставка": {
-        "answer": "Для заказа доставки через приложение APARU: 1) Откройте приложение 2) Выберите раздел 'Доставка' 3) Укажите адрес отправления и получения 4) Выберите тип доставки 5) Подтвердите заказ. Курьер свяжется с вами для уточнения деталей.",
-        "keywords": ["доставка", "доставки", "доставку", "доставкой", "курьер", "посылка", "отправить", "заказать", "доставить", "передать"],
-        "synonyms": ["курьер", "посылка", "отправить", "заказать", "доставить", "передать", "отправка"],
-        "variations": ["доставкy", "доставкa", "доставкi", "доставкe", "доставкoй"]
-    },
-    "баланс": {
-        "answer": "Для пополнения баланса в приложении APARU: 1) Откройте приложение 2) Перейдите в раздел 'Профиль' 3) Выберите 'Пополнить баланс' 4) Выберите способ оплаты 5) Введите сумму 6) Подтвердите операцию. Баланс пополнится в течение нескольких минут.",
-        "keywords": ["баланс", "баланса", "балансу", "балансом", "счет", "кошелек", "пополнить", "платеж", "деньги", "средства"],
-        "synonyms": ["счет", "кошелек", "пополнить", "платеж", "деньги", "средства", "финансы"],
-        "variations": ["балaнс", "балaнc", "балaнсу", "балaнсом", "балaнca"]
-    },
-    "приложение": {
-        "answer": "Если приложение APARU не работает: 1) Перезапустите приложение 2) Проверьте подключение к интернету 3) Обновите приложение до последней версии 4) Очистите кэш приложения 5) Переустановите приложение. Если проблема не решается, обратитесь в службу поддержки.",
-        "keywords": ["приложение", "приложения", "приложению", "приложением", "программа", "софт", "апп", "работать", "не работает", "глючит", "висит"],
-        "synonyms": ["программа", "софт", "апп", "работать", "не работает", "глючит", "висит", "тормозит"],
-        "variations": ["приложениe", "приложениa", "приложениy", "приложениi", "приложениoм"]
-    }
-}
-
-class EnhancedAIModel:
+class SimpleAnswerSelectionClient:
     def __init__(self):
-        self.stemmer = SnowballStemmer('russian')
-        self.stop_words = set(stopwords.words('russian'))
-        self.vectorizer = TfidfVectorizer(
-            max_features=1000,
-            stop_words=list(self.stop_words),
-            ngram_range=(1, 2)
-        )
-        self._prepare_knowledge_base()
+        self.knowledge_base = self._load_knowledge_base()
+        self.morphological_forms = self._create_morphological_forms()
         
-    def _prepare_knowledge_base(self):
-        """Подготавливает базу знаний для поиска"""
-        self.questions = []
-        self.answers = []
-        self.categories = []
-        
-        for category, data in ENHANCED_KB.items():
-            # Основной вопрос
-            self.questions.append(f"Что такое {category}?")
-            self.answers.append(data["answer"])
-            self.categories.append(category)
-            
-            # Добавляем вариации вопросов
-            for keyword in data["keywords"]:
-                if keyword != category:  # Избегаем дублирования
-                    self.questions.append(f"Как {keyword}?")
-                    self.answers.append(data["answer"])
-                    self.categories.append(category)
-        
-        # Обучаем TF-IDF
-        self.tfidf_matrix = self.vectorizer.fit_transform(self.questions)
-        logger.info(f"✅ База знаний подготовлена: {len(self.questions)} вопросов")
+    def _load_knowledge_base(self) -> List[Dict[str, Any]]:
+        """Загружает базу знаний"""
+        try:
+            with open('BZ.txt', 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception as e:
+            logger.error(f"❌ Ошибка загрузки базы знаний: {e}")
+            return []
     
-    def normalize_text(self, text: str) -> str:
-        """Нормализует текст"""
-        # Убираем эмодзи и спецсимволы
-        text = re.sub(r'[^\w\s]', ' ', text.lower())
-        # Убираем лишние пробелы
-        text = re.sub(r'\s+', ' ', text).strip()
-        return text
-    
-    def find_best_match(self, query: str) -> Dict[str, Any]:
-        """Находит лучший ответ на вопрос"""
-        normalized_query = self.normalize_text(query)
-        
-        # 1. Прямой поиск по ключевым словам
-        direct_match = self._direct_search(normalized_query)
-        if direct_match["confidence"] > 0.8:
-            return direct_match
-        
-        # 2. Fuzzy поиск
-        fuzzy_match = self._fuzzy_search(normalized_query)
-        if fuzzy_match["confidence"] > 0.6:
-            return fuzzy_match
-        
-        # 3. TF-IDF поиск
-        tfidf_match = self._tfidf_search(normalized_query)
-        if tfidf_match["confidence"] > 0.5:
-            return tfidf_match
-        
-        # 4. Fallback
+    def _create_morphological_forms(self) -> Dict[str, List[str]]:
+        """Создает словарь морфологических форм"""
         return {
-            "answer": "Извините, не могу найти ответ на ваш вопрос. Обратитесь в службу поддержки.",
-            "category": "unknown",
-            "confidence": 0.0,
-            "source": "fallback",
-            "suggestions": self._get_suggestions(normalized_query)
+            # Наценка
+            "наценка": ["наценка", "наценки", "наценку", "наценкой", "наценке", "наценках"],
+            "доплата": ["доплата", "доплаты", "доплату", "доплатой", "доплате", "доплатах"],
+            "надбавка": ["надбавка", "надбавки", "надбавку", "надбавкой", "надбавке", "надбавках"],
+            "коэффициент": ["коэффициент", "коэффициенты", "коэффициента", "коэффициентом", "коэффициенте", "коэффициентах"],
+            
+            # Комфорт
+            "комфорт": ["комфорт", "комфорты", "комфорта", "комфортом", "комфорте", "комфортах"],
+            "тариф": ["тариф", "тарифы", "тарифа", "тарифом", "тарифе", "тарифах"],
+            "класс": ["класс", "классы", "класса", "классом", "классе", "классах"],
+            
+            # Расценка
+            "расценка": ["расценка", "расценки", "расценку", "расценкой", "расценке", "расценках"],
+            "стоимость": ["стоимость", "стоимости", "стоимостью", "стоимости", "стоимости", "стоимостях"],
+            "цена": ["цена", "цены", "цену", "ценой", "цене", "ценах"],
+            
+            # Доставка
+            "доставка": ["доставка", "доставки", "доставку", "доставкой", "доставке", "доставках"],
+            "заказ": ["заказ", "заказы", "заказа", "заказом", "заказе", "заказах"],
+            
+            # Предварительный заказ
+            "предварительный": ["предварительный", "предварительные", "предварительного", "предварительным", "предварительном", "предварительных"],
+            "заранее": ["заранее"],
+            
+            # Водитель
+            "водитель": ["водитель", "водители", "водителя", "водителем", "водителе", "водителях"],
+            "заказы": ["заказы", "заказов", "заказам", "заказами", "заказах", "заказах"],
+            
+            # Баланс
+            "баланс": ["баланс", "балансы", "баланса", "балансом", "балансе", "балансах"],
+            "пополнить": ["пополнить", "пополняю", "пополняешь", "пополняет", "пополняем", "пополняете", "пополняют"],
+            "оплатить": ["оплатить", "оплачиваю", "оплачиваешь", "оплачивает", "оплачиваем", "оплачиваете", "оплачивают"],
+            
+            # Приложение
+            "приложение": ["приложение", "приложения", "приложения", "приложением", "приложении", "приложениях"],
+            "обновить": ["обновить", "обновляю", "обновляешь", "обновляет", "обновляем", "обновляете", "обновляют"],
+            
+            # Промокод
+            "промокод": ["промокод", "промокоды", "промокода", "промокодом", "промокоде", "промокодах"],
+            "скидка": ["скидка", "скидки", "скидку", "скидкой", "скидке", "скидках"],
+            "бонус": ["бонус", "бонусы", "бонуса", "бонусом", "бонусе", "бонусах"],
+            
+            # Отмена
+            "отменить": ["отменить", "отменяю", "отменяешь", "отменяет", "отменяем", "отменяете", "отменяют"],
+            "отмена": ["отмена", "отмены", "отмену", "отменой", "отмене", "отменах"]
         }
     
-    def _direct_search(self, query: str) -> Dict[str, Any]:
-        """Прямой поиск по ключевым словам"""
-        for category, data in ENHANCED_KB.items():
-            # Проверяем основные ключевые слова
-            for keyword in data["keywords"]:
-                if keyword in query:
-                    return {
-                        "answer": data["answer"],
-                        "category": category,
-                        "confidence": 0.9,
-                        "source": "direct"
-                    }
-            
-            # Проверяем синонимы
-            for synonym in data["synonyms"]:
-                if synonym in query:
-                    return {
-                        "answer": data["answer"],
-                        "category": category,
-                        "confidence": 0.8,
-                        "source": "synonym"
-                    }
-            
-            # Проверяем вариации (опечатки)
-            for variation in data["variations"]:
-                if variation in query:
-                    return {
-                        "answer": data["answer"],
-                        "category": category,
-                        "confidence": 0.7,
-                        "source": "variation"
-                    }
-        
-        return {"confidence": 0.0}
-    
-    def _fuzzy_search(self, query: str) -> Dict[str, Any]:
-        """Fuzzy поиск"""
-        best_score = 0
-        best_match = None
-        
-        for category, data in ENHANCED_KB.items():
-            # Проверяем все ключевые слова
-            all_keywords = data["keywords"] + data["synonyms"] + data["variations"]
-            
-            for keyword in all_keywords:
-                score = fuzz.partial_ratio(query, keyword)
-                if score > best_score:
-                    best_score = score
-                    best_match = {
-                        "answer": data["answer"],
-                        "category": category,
-                        "confidence": score / 100,
-                        "source": "fuzzy"
-                    }
-        
-        return best_match if best_match and best_match["confidence"] > 0.6 else {"confidence": 0.0}
-    
-    def _tfidf_search(self, query: str) -> Dict[str, Any]:
-        """TF-IDF поиск"""
+    def _llm_search_answer(self, question: str) -> Dict[str, Any]:
+        """LLM поиск ответа"""
         try:
-            query_vector = self.vectorizer.transform([query])
-            similarities = cosine_similarity(query_vector, self.tfidf_matrix).flatten()
-            
-            best_idx = np.argmax(similarities)
-            best_score = similarities[best_idx]
-            
-            if best_score > 0.3:
-                return {
-                    "answer": self.answers[best_idx],
-                    "category": self.categories[best_idx],
-                    "confidence": float(best_score),
-                    "source": "tfidf"
-                }
-        except Exception as e:
-            logger.error(f"Ошибка TF-IDF поиска: {e}")
-        
-        return {"confidence": 0.0}
-    
-    def _get_suggestions(self, query: str) -> List[str]:
-        """Получает предложения похожих вопросов"""
-        suggestions = []
-        
-        for category, data in ENHANCED_KB.items():
-            # Добавляем основные вопросы
-            suggestions.append(f"Что такое {category}?")
-            
-            # Добавляем популярные варианты
-            for keyword in data["keywords"][:3]:  # Только первые 3
-                if keyword != category:
-                    suggestions.append(f"Как {keyword}?")
-        
-        return suggestions[:5]  # Максимум 5 предложений
+            prompt = f"""Вопрос: "{question}"
 
-# Глобальный экземпляр модели
-ai_model = EnhancedAIModel()
+Выбери номер ответа:
+1 - наценка
+2 - комфорт  
+3 - расценка
+4 - доставка
+5 - предварительный заказ
+6 - водитель
+7 - баланс
+8 - приложение
+9 - промокод
+10 - отмена
+
+Номер:"""
+            
+            response = requests.post(
+                "http://127.0.0.1:11434/api/generate",
+                json={
+                    "model": "llama2:7b",
+                    "prompt": prompt,
+                    "stream": False,
+                    "options": {
+                        "temperature": 0.0,
+                        "num_predict": 2,
+                        "num_ctx": 128,
+                        "top_k": 1,
+                        "top_p": 0.1,
+                        "stop": ["\n", ".", " "]
+                    }
+                },
+                timeout=5
+            )
+            
+            if response.status_code == 200:
+                llm_response = response.json()["response"].strip()
+                category_number = int(llm_response) if llm_response.isdigit() else 0
+                
+                if 1 <= category_number <= 10:
+                    answer = self.knowledge_base[category_number - 1]["answer"]
+                    return {
+                        "answer": answer,
+                        "category": f"Ответ {category_number}",
+                        "confidence": 0.95,
+                        "source": "enhanced_llm"
+                    }
+            
+            raise Exception("LLM не вернул валидный ответ")
+            
+        except Exception as e:
+            logger.error(f"❌ LLM ошибка: {e}")
+            raise e
+    
+    def _enhanced_morphological_search(self, question: str) -> Optional[Dict[str, Any]]:
+        """Улучшенный морфологический поиск"""
+        question_lower = question.lower()
+        
+        # Ищем точные совпадения с морфологическими формами
+        for base_word, forms in self.morphological_forms.items():
+            for form in forms:
+                if form in question_lower:
+                    # Находим соответствующую категорию в базе знаний
+                    category = self._find_category_by_keyword(base_word)
+                    if category:
+                        return {
+                            "answer": category["answer"],
+                            "category": f"morphological_match_{base_word}",
+                            "confidence": 0.9,
+                            "source": "morphological_search"
+                        }
+        
+        return None
+    
+    def _find_category_by_keyword(self, keyword: str) -> Optional[Dict[str, Any]]:
+        """Находит категорию по ключевому слову"""
+        keyword_mapping = {
+            "наценка": 0, "доплата": 0, "надбавка": 0, "коэффициент": 0,
+            "комфорт": 1, "тариф": 1, "класс": 1,
+            "расценка": 2, "стоимость": 2, "цена": 2,
+            "доставка": 3, "заказ": 3,
+            "предварительный": 4, "заранее": 4,
+            "водитель": 5, "заказы": 5,
+            "баланс": 6, "пополнить": 6, "оплатить": 6,
+            "приложение": 7, "обновить": 7,
+            "промокод": 8, "скидка": 8, "бонус": 8,
+            "отменить": 9, "отмена": 9
+        }
+        
+        if keyword in keyword_mapping:
+            category_index = keyword_mapping[keyword]
+            if category_index < len(self.knowledge_base):
+                return self.knowledge_base[category_index]
+        
+        return None
+    
+    def _partial_match_search(self, question: str) -> Optional[Dict[str, Any]]:
+        """Поиск по частичным совпадениям"""
+        question_lower = question.lower()
+        question_words = question_lower.split()
+        
+        # Ищем частичные совпадения
+        for i, item in enumerate(self.knowledge_base):
+            for keyword in item["keywords"]:
+                keyword_lower = keyword.lower()
+                
+                # Точное совпадение
+                if keyword_lower in question_lower:
+                    return {
+                        "answer": item["answer"],
+                        "category": f"partial_match_{i+1}",
+                        "confidence": 0.8,
+                        "source": "partial_search"
+                    }
+                
+                # Частичное совпадение (минимум 3 символа)
+                if len(keyword_lower) >= 3:
+                    for word in question_words:
+                        if len(word) >= 3 and keyword_lower in word:
+                            return {
+                                "answer": item["answer"],
+                                "category": f"partial_match_{i+1}",
+                                "confidence": 0.6,
+                                "source": "partial_search"
+                            }
+        
+        return None
+    
+    def find_best_answer(self, question: str) -> Dict[str, Any]:
+        """Находит лучший ответ с улучшенной системой"""
+        start_time = datetime.now()
+        
+        try:
+            # 1. Пробуем LLM
+            logger.info("🎯 Используем улучшенную LLM...")
+            result = self._llm_search_answer(question)
+            processing_time = (datetime.now() - start_time).total_seconds()
+            logger.info(f"✅ LLM выбор завершен за {processing_time:.2f}с")
+            return result
+            
+        except Exception as e:
+            logger.error(f"❌ LLM выбор таймаут (>5с)")
+            
+            # 2. Морфологический поиск
+            logger.info("🔄 Пробуем морфологический поиск...")
+            result = self._enhanced_morphological_search(question)
+            if result:
+                processing_time = (datetime.now() - start_time).total_seconds()
+                logger.info(f"✅ Морфологический поиск завершен за {processing_time:.2f}с")
+                return result
+            
+            # 3. Частичный поиск
+            logger.info("🔄 Пробуем частичный поиск...")
+            result = self._partial_match_search(question)
+            if result:
+                processing_time = (datetime.now() - start_time).total_seconds()
+                logger.info(f"✅ Частичный поиск завершен за {processing_time:.2f}с")
+                return result
+            
+            # 4. Fallback
+            logger.info("🔄 Fallback ответ...")
+            processing_time = (datetime.now() - start_time).total_seconds()
+            logger.info(f"❌ Fallback ответ за {processing_time:.2f}с")
+            
+            return {
+                "answer": "Извините, не могу найти ответ на ваш вопрос. Обратитесь в службу поддержки.",
+                "category": "unknown",
+                "confidence": 0.0,
+                "source": "fallback"
+            }
+
+# Глобальный экземпляр
+simple_answer_client = SimpleAnswerSelectionClient()
 
 @app.get("/")
 async def root():
-    return {"message": "APARU Enhanced AI Assistant", "status": "running", "version": "3.0.0"}
+    return {
+        "message": "APARU Enhanced Answer Selection", 
+        "status": "running", 
+        "version": "10.0.0",
+        "features": ["LLM Selection", "Morphological Search", "Partial Match", "Fallback"]
+    }
 
 @app.get("/health", response_model=HealthResponse)
-async def health():
-    return HealthResponse(
-        status="healthy",
-        architecture="enhanced",
-        timestamp=datetime.now().isoformat()
-    )
+async def health_check():
+    """Проверка здоровья системы"""
+    try:
+        # Проверяем LLM
+        llm_available = False
+        try:
+            response = requests.get("http://127.0.0.1:11434/api/tags", timeout=2)
+            llm_available = response.status_code == 200
+        except:
+            pass
+        
+        return HealthResponse(
+            status="healthy",
+            timestamp=datetime.now().isoformat(),
+            llm_available=llm_available
+        )
+    except Exception as e:
+        logger.error(f"❌ Health check failed: {e}")
+        raise HTTPException(status_code=500, detail="Health check failed")
 
 @app.post("/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest):
+async def chat_endpoint(request: ChatRequest):
     """Основной эндпоинт для чата"""
     try:
-        result = ai_model.find_best_match(request.text)
+        logger.info(f"📨 Получен вопрос: {request.text}")
         
-        return ChatResponse(
+        # Обрабатываем вопрос
+        result = simple_answer_client.find_best_answer(request.text)
+        
+        # Формируем ответ
+        response = ChatResponse(
             response=result["answer"],
             intent=result["category"],
             confidence=result["confidence"],
             source=result["source"],
             timestamp=datetime.now().isoformat(),
-            suggestions=result.get("suggestions", [])
-        )
-    
-    except Exception as e:
-        logger.error(f"Ошибка в /chat: {e}")
-        return ChatResponse(
-            response="Извините, произошла ошибка при обработке вашего запроса.",
-            intent="error",
-            confidence=0.0,
-            source="error",
-            timestamp=datetime.now().isoformat(),
             suggestions=[]
         )
+        
+        logger.info(f"✅ Ответ отправлен: {result['source']}")
+        return response
+        
+    except Exception as e:
+        logger.error(f"❌ Ошибка обработки вопроса: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@app.get("/webapp", response_class=HTMLResponse)
+async def webapp():
+    """Telegram WebApp интерфейс"""
+    html_content = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>APARU Support</title>
+        <script src="https://telegram.org/js/telegram-web-app.js"></script>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f0f0f0; }
+            .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 10px; padding: 20px; }
+            .header { text-align: center; margin-bottom: 20px; }
+            .chat-container { height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; margin-bottom: 20px; }
+            .message { margin-bottom: 10px; padding: 10px; border-radius: 10px; }
+            .user-message { background: #007bff; color: white; margin-left: 20%; }
+            .bot-message { background: #f8f9fa; color: black; margin-right: 20%; }
+            .input-container { display: flex; gap: 10px; }
+            .input-field { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+            .send-button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+            .quick-buttons { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+            .quick-button { padding: 8px 16px; background: #e9ecef; border: 1px solid #ddd; border-radius: 20px; cursor: pointer; font-size: 14px; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>🚕 APARU Support</h1>
+                <p>Улучшенная система поддержки с морфологией</p>
+            </div>
+            
+            <div class="quick-buttons">
+                <button class="quick-button" onclick="sendQuickMessage('Что такое наценка?')">Наценка</button>
+                <button class="quick-button" onclick="sendQuickMessage('Как пополнить баланс?')">Баланс</button>
+                <button class="quick-button" onclick="sendQuickMessage('Что такое комфорт?')">Комфорт</button>
+                <button class="quick-button" onclick="sendQuickMessage('Как отменить заказ?')">Отмена</button>
+                <button class="quick-button" onclick="sendQuickMessage('Приложение не работает')">Приложение</button>
+            </div>
+            
+            <div class="chat-container" id="chatContainer">
+                <div class="message bot-message">
+                    <strong>APARU Support:</strong> Здравствуйте! Я помогу вам с вопросами по такси APARU. Задайте ваш вопрос или выберите быструю кнопку.
+                </div>
+            </div>
+            
+            <div class="input-container">
+                <input type="text" class="input-field" id="messageInput" placeholder="Задайте ваш вопрос..." onkeypress="handleKeyPress(event)">
+                <button class="send-button" onclick="sendMessage()">Отправить</button>
+            </div>
+        </div>
+
+        <script>
+            const chatContainer = document.getElementById('chatContainer');
+            const messageInput = document.getElementById('messageInput');
+            
+            function addMessage(text, isUser = false) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
+                messageDiv.innerHTML = `<strong>${isUser ? 'Вы:' : 'APARU Support:'}</strong> ${text}`;
+                chatContainer.appendChild(messageDiv);
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+            
+            async function sendMessage() {
+                const message = messageInput.value.trim();
+                if (!message) return;
+                
+                addMessage(message, true);
+                messageInput.value = '';
+                
+                try {
+                    const response = await fetch('/chat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            text: message,
+                            user_id: 'webapp_user',
+                            locale: 'ru'
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    addMessage(data.response);
+                    
+                } catch (error) {
+                    addMessage('Извините, произошла ошибка. Попробуйте еще раз.');
+                }
+            }
+            
+            function sendQuickMessage(message) {
+                messageInput.value = message;
+                sendMessage();
+            }
+            
+            function handleKeyPress(event) {
+                if (event.key === 'Enter') {
+                    sendMessage();
+                }
+            }
+            
+            // Инициализация Telegram WebApp
+            if (window.Telegram && window.Telegram.WebApp) {
+                window.Telegram.WebApp.ready();
+                window.Telegram.WebApp.expand();
+            }
+        </script>
+    </body>
+    </html>
+    """
+    return HTMLResponse(content=html_content)
 
 if __name__ == "__main__":
     import uvicorn
-    
-    # Railway использует переменную PORT
-    port = int(os.environ.get("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    uvicorn.run(app, host="0.0.0.0", port=8000)

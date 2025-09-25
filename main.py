@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-🎯 МАКСИМАЛЬНО ПРОСТАЯ СИСТЕМА ВЫБОРА ОТВЕТОВ
+🎯 УЛУЧШЕННАЯ СИСТЕМА ВЫБОРА ОТВЕТОВ С МОРФОЛОГИЕЙ
 """
 
 import json
@@ -18,7 +18,7 @@ import os
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="APARU Simple Answer Selection", version="9.0.0")
+app = FastAPI(title="APARU Enhanced Answer Selection", version="10.0.0")
 
 # CORS middleware
 app.add_middleware(
@@ -45,73 +45,77 @@ class ChatResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     status: str
-    architecture: str = "simple_answer_selection"
+    architecture: str = "enhanced_answer_selection"
     timestamp: str
     llm_available: bool = False
 
 class SimpleAnswerSelectionClient:
     def __init__(self):
-        self.ollama_url = os.environ.get("OLLAMA_URL", "http://localhost:11434")
-        self.model_name = "aparu-senior-ai"
-        self.ollama_available = False
-        
-        # Загружаем базу знаний
         self.knowledge_base = self._load_knowledge_base()
+        self.morphological_forms = self._create_morphological_forms()
         
-        # Проверяем доступность Ollama
-        self._check_ollama_model()
-    
     def _load_knowledge_base(self) -> List[Dict[str, Any]]:
         """Загружает базу знаний"""
         try:
-            with open("BZ.txt", "r", encoding="utf-8") as f:
-                data = json.load(f)
-                logger.info(f"✅ Загружена база знаний: BZ.txt ({len(data)} ответов)")
-                return data
+            with open('BZ.txt', 'r', encoding='utf-8') as f:
+                return json.load(f)
         except Exception as e:
             logger.error(f"❌ Ошибка загрузки базы знаний: {e}")
             return []
     
-    def _check_ollama_model(self):
-        """Проверяет доступность Ollama и модели"""
-        try:
-            response = requests.get(f"{self.ollama_url}/api/tags", timeout=5)
-            if response.status_code == 200:
-                models = response.json().get("models", [])
-                if any(m["name"].startswith(self.model_name) for m in models):
-                    self.ollama_available = True
-                    logger.info(f"✅ Ollama и модель '{self.model_name}' доступны")
-                else:
-                    logger.warning(f"⚠️ Модель '{self.model_name}' не найдена в Ollama")
-            else:
-                logger.warning(f"⚠️ Ollama недоступен: {response.status_code}")
-        except Exception as e:
-            logger.warning(f"⚠️ Не удалось подключиться к Ollama: {e}")
+    def _create_morphological_forms(self) -> Dict[str, List[str]]:
+        """Создает словарь морфологических форм"""
+        return {
+            # Наценка
+            "наценка": ["наценка", "наценки", "наценку", "наценкой", "наценке", "наценках"],
+            "доплата": ["доплата", "доплаты", "доплату", "доплатой", "доплате", "доплатах"],
+            "надбавка": ["надбавка", "надбавки", "надбавку", "надбавкой", "надбавке", "надбавках"],
+            "коэффициент": ["коэффициент", "коэффициенты", "коэффициента", "коэффициентом", "коэффициенте", "коэффициентах"],
+            
+            # Комфорт
+            "комфорт": ["комфорт", "комфорты", "комфорта", "комфортом", "комфорте", "комфортах"],
+            "тариф": ["тариф", "тарифы", "тарифа", "тарифом", "тарифе", "тарифах"],
+            "класс": ["класс", "классы", "класса", "классом", "классе", "классах"],
+            
+            # Расценка
+            "расценка": ["расценка", "расценки", "расценку", "расценкой", "расценке", "расценках"],
+            "стоимость": ["стоимость", "стоимости", "стоимостью", "стоимости", "стоимости", "стоимостях"],
+            "цена": ["цена", "цены", "цену", "ценой", "цене", "ценах"],
+            
+            # Доставка
+            "доставка": ["доставка", "доставки", "доставку", "доставкой", "доставке", "доставках"],
+            "заказ": ["заказ", "заказы", "заказа", "заказом", "заказе", "заказах"],
+            
+            # Предварительный заказ
+            "предварительный": ["предварительный", "предварительные", "предварительного", "предварительным", "предварительном", "предварительных"],
+            "заранее": ["заранее"],
+            
+            # Водитель
+            "водитель": ["водитель", "водители", "водителя", "водителем", "водителе", "водителях"],
+            "заказы": ["заказы", "заказов", "заказам", "заказами", "заказах", "заказах"],
+            
+            # Баланс
+            "баланс": ["баланс", "балансы", "баланса", "балансом", "балансе", "балансах"],
+            "пополнить": ["пополнить", "пополняю", "пополняешь", "пополняет", "пополняем", "пополняете", "пополняют"],
+            "оплатить": ["оплатить", "оплачиваю", "оплачиваешь", "оплачивает", "оплачиваем", "оплачиваете", "оплачивают"],
+            
+            # Приложение
+            "приложение": ["приложение", "приложения", "приложения", "приложением", "приложении", "приложениях"],
+            "обновить": ["обновить", "обновляю", "обновляешь", "обновляет", "обновляем", "обновляете", "обновляют"],
+            
+            # Промокод
+            "промокод": ["промокод", "промокоды", "промокода", "промокодом", "промокоде", "промокодах"],
+            "скидка": ["скидка", "скидки", "скидку", "скидкой", "скидке", "скидках"],
+            "бонус": ["бонус", "бонусы", "бонуса", "бонусом", "бонусе", "бонусах"],
+            
+            # Отмена
+            "отменить": ["отменить", "отменяю", "отменяешь", "отменяет", "отменяем", "отменяете", "отменяют"],
+            "отмена": ["отмена", "отмены", "отмену", "отменой", "отмене", "отменах"]
+        }
     
-    def find_best_answer(self, question: str) -> Dict[str, Any]:
-        """Находит лучший ответ используя максимально простую LLM"""
-        start_time = datetime.now()
-        
-        # Используем максимально простую LLM
-        if self.ollama_available:
-            try:
-                logger.info("🎯 Используем максимально простую LLM...")
-                result = self._super_simple_llm_selection(question)
-                if result:
-                    processing_time = (datetime.now() - start_time).total_seconds()
-                    logger.info(f"✅ LLM выбор завершен за {processing_time:.2f}с")
-                    return result
-            except Exception as e:
-                logger.error(f"❌ Ошибка LLM выбора: {e}")
-        
-        # Fallback к поиску по ключевым словам
-        logger.info("🔄 Fallback к поиску по ключевым словам...")
-        return self._keyword_search(question)
-    
-    def _super_simple_llm_selection(self, question: str) -> Dict[str, Any]:
-        """Максимально простая LLM для выбора ответа"""
+    def _llm_search_answer(self, question: str) -> Dict[str, Any]:
+        """LLM поиск ответа"""
         try:
-            # СУПЕР-ПРОСТОЙ ПРОМПТ
             prompt = f"""Вопрос: "{question}"
 
 Выбери номер ответа:
@@ -127,160 +131,224 @@ class SimpleAnswerSelectionClient:
 10 - отмена
 
 Номер:"""
-
-            payload = {
-                "model": self.model_name,
-                "prompt": prompt,
-                "stream": False,
-                "options": {
-                    "temperature": 0.0,   # Минимальная температура
-                    "num_predict": 2,     # Только номер
-                    "num_ctx": 128,       # Минимальный контекст
-                    "repeat_penalty": 1.0,
-                    "top_k": 1,           # Только лучший вариант
-                    "top_p": 0.1,         # Минимальная вероятность
-                    "stop": ["\n", ".", "!", "?", "Ответ:", "Категория:"]  # Стоп-слова
-                }
-            }
             
             response = requests.post(
-                f"{self.ollama_url}/api/generate",
-                json=payload,
-                timeout=5  # Очень короткий таймаут
+                "http://127.0.0.1:11434/api/generate",
+                json={
+                    "model": "llama2:7b",
+                    "prompt": prompt,
+                    "stream": False,
+                    "options": {
+                        "temperature": 0.0,
+                        "num_predict": 2,
+                        "num_ctx": 128,
+                        "top_k": 1,
+                        "top_p": 0.1,
+                        "stop": ["\n", ".", " "]
+                    }
+                },
+                timeout=15
             )
             
             if response.status_code == 200:
-                data = response.json()
-                answer = data.get('response', '').strip()
+                llm_response = response.json()["response"].strip()
+                category_number = int(llm_response) if llm_response.isdigit() else 0
                 
-                # Парсим номер выбранного ответа
-                selected_num = self._parse_selected_answer(answer)
-                if selected_num:
-                    # Возвращаем готовый ответ из базы
-                    if 1 <= selected_num <= len(self.knowledge_base):
-                        kb_item = self.knowledge_base[selected_num - 1]
-                        return {
-                            "answer": kb_item.get("answer", "Ответ не найден"),
-                            "category": f"Ответ {selected_num}",
-                            "confidence": 0.95,
-                            "source": "super_simple_llm"
-                        }
-                
-                logger.warning(f"⚠️ LLM вернул неожиданный ответ: '{answer}'")
-                return None
+                if 1 <= category_number <= 10:
+                    answer = self.knowledge_base[category_number - 1]["answer"]
+                    return {
+                        "answer": answer,
+                        "category": f"Ответ {category_number}",
+                        "confidence": 0.95,
+                        "source": "enhanced_llm"
+                    }
             
-            logger.warning(f"⚠️ LLM вернул ошибку: {response.status_code}")
-            return None
+            raise Exception("LLM не вернул валидный ответ")
             
-        except requests.exceptions.Timeout:
-            logger.error(f"❌ LLM выбор таймаут (>5с)")
-            return None
         except Exception as e:
-            logger.error(f"❌ Ошибка LLM выбора: {e}")
-            return None
+            logger.error(f"❌ LLM ошибка: {e}")
+            raise e
     
-    def _parse_selected_answer(self, answer: str) -> Optional[int]:
-        """Парсим номер выбранного ответа"""
-        try:
-            # Ищем число в ответе
-            import re
-            numbers = re.findall(r'\d+', answer)
-            if numbers:
-                num = int(numbers[0])
-                if 1 <= num <= 10:
-                    return num
-            return None
-        except:
-            return None
-    
-    def _keyword_search(self, question: str) -> Dict[str, Any]:
-        """Fallback поиск по ключевым словам"""
+    def _enhanced_morphological_search(self, question: str) -> Optional[Dict[str, Any]]:
+        """Улучшенный морфологический поиск"""
         question_lower = question.lower()
         
-        best_match = None
-        best_score = 0
+        # Ищем точные совпадения с морфологическими формами
+        for base_word, forms in self.morphological_forms.items():
+            for form in forms:
+                if form in question_lower:
+                    # Находим соответствующую категорию в базе знаний
+                    category = self._find_category_by_keyword(base_word)
+                    if category:
+                        return {
+                            "answer": category["answer"],
+                            "category": f"morphological_match_{base_word}",
+                            "confidence": 0.9,
+                            "source": "morphological_search"
+                        }
         
-        for item in self.knowledge_base:
-            keywords = item.get("keywords", [])
-            variations = item.get("question_variations", [])
-            
-            # Подсчитываем совпадения ключевых слов
-            keyword_matches = 0
-            for keyword in keywords:
-                if keyword.lower() in question_lower:
-                    keyword_matches += 1
-            
-            # Подсчитываем совпадения вариаций
-            variation_matches = 0
-            for variation in variations:
-                if variation.lower() in question_lower:
-                    variation_matches += 1
-            
-            # Общий счет
-            total_score = keyword_matches + variation_matches
-            
-            if total_score > best_score:
-                best_score = total_score
-                best_match = item
-        
-        if best_match and best_score > 0:
-            return {
-                "answer": best_match.get("answer", "Ответ не найден"),
-                "category": "keyword_match",
-                "confidence": min(0.9, best_score * 0.2),
-                "source": "keyword_search"
-            }
-        
-        # Fallback
-        return {
-            "answer": "Извините, не могу найти ответ на ваш вопрос. Обратитесь в службу поддержки.",
-            "category": "unknown",
-            "confidence": 0.0,
-            "source": "fallback"
+        return None
+    
+    def _find_category_by_keyword(self, keyword: str) -> Optional[Dict[str, Any]]:
+        """Находит категорию по ключевому слову"""
+        keyword_mapping = {
+            "наценка": 0, "доплата": 0, "надбавка": 0, "коэффициент": 0,
+            "комфорт": 1, "тариф": 1, "класс": 1,
+            "расценка": 2, "стоимость": 2, "цена": 2,
+            "доставка": 3, "заказ": 3,
+            "предварительный": 4, "заранее": 4,
+            "водитель": 5, "заказы": 5,
+            "баланс": 6, "пополнить": 6, "оплатить": 6,
+            "приложение": 7, "обновить": 7,
+            "промокод": 8, "скидка": 8, "бонус": 8,
+            "отменить": 9, "отмена": 9
         }
+        
+        if keyword in keyword_mapping:
+            category_index = keyword_mapping[keyword]
+            if category_index < len(self.knowledge_base):
+                return self.knowledge_base[category_index]
+        
+        return None
+    
+    def _partial_match_search(self, question: str) -> Optional[Dict[str, Any]]:
+        """Поиск по частичным совпадениям"""
+        question_lower = question.lower()
+        question_words = question_lower.split()
+        
+        # Ищем частичные совпадения
+        for i, item in enumerate(self.knowledge_base):
+            for keyword in item["keywords"]:
+                keyword_lower = keyword.lower()
+                
+                # Точное совпадение
+                if keyword_lower in question_lower:
+                    return {
+                        "answer": item["answer"],
+                        "category": f"partial_match_{i+1}",
+                        "confidence": 0.8,
+                        "source": "partial_search"
+                    }
+                
+                # Частичное совпадение (минимум 3 символа)
+                if len(keyword_lower) >= 3:
+                    for word in question_words:
+                        if len(word) >= 3 and keyword_lower in word:
+                            return {
+                                "answer": item["answer"],
+                                "category": f"partial_match_{i+1}",
+                                "confidence": 0.6,
+                                "source": "partial_search"
+                            }
+        
+        return None
+    
+    def find_best_answer(self, question: str) -> Dict[str, Any]:
+        """Находит лучший ответ с улучшенной системой"""
+        start_time = datetime.now()
+        
+        try:
+            # 1. Пробуем LLM
+            logger.info("🎯 Используем улучшенную LLM...")
+            result = self._llm_search_answer(question)
+            processing_time = (datetime.now() - start_time).total_seconds()
+            logger.info(f"✅ LLM выбор завершен за {processing_time:.2f}с")
+            return result
+            
+        except Exception as e:
+            logger.error(f"❌ LLM выбор таймаут (>5с)")
+            
+            # 2. Морфологический поиск
+            logger.info("🔄 Пробуем морфологический поиск...")
+            result = self._enhanced_morphological_search(question)
+            if result:
+                processing_time = (datetime.now() - start_time).total_seconds()
+                logger.info(f"✅ Морфологический поиск завершен за {processing_time:.2f}с")
+                return result
+            
+            # 3. Частичный поиск
+            logger.info("🔄 Пробуем частичный поиск...")
+            result = self._partial_match_search(question)
+            if result:
+                processing_time = (datetime.now() - start_time).total_seconds()
+                logger.info(f"✅ Частичный поиск завершен за {processing_time:.2f}с")
+                return result
+            
+            # 4. Fallback
+            logger.info("🔄 Fallback ответ...")
+            processing_time = (datetime.now() - start_time).total_seconds()
+            logger.info(f"❌ Fallback ответ за {processing_time:.2f}с")
+            
+            return {
+                "answer": "Извините, не могу найти ответ на ваш вопрос. Обратитесь в службу поддержки.",
+                "category": "unknown",
+                "confidence": 0.0,
+                "source": "fallback"
+            }
 
 # Глобальный экземпляр
 simple_answer_client = SimpleAnswerSelectionClient()
 
+@app.on_event("startup")
+async def startup_event():
+    """Прогрев LLM при старте приложения"""
+    try:
+        logger.info("🔥 Прогрев LLM...")
+        requests.post(
+            "http://127.0.0.1:11434/api/generate",
+            json={
+                "model": "llama2:7b",
+                "prompt": "1",
+                "stream": False,
+                "options": {"num_predict": 1, "temperature": 0.0}
+            },
+            timeout=20
+        )
+        logger.info("✅ LLM прогрет успешно")
+    except Exception as e:
+        logger.warning(f"⚠️ Не удалось прогреть LLM: {e}")
+
 @app.get("/")
 async def root():
     return {
-        "message": "APARU Simple Answer Selection", 
+        "message": "APARU Enhanced Answer Selection", 
         "status": "running", 
-        "version": "9.0.0",
-        "architecture": "simple_answer_selection",
-        "llm_available": simple_answer_client.ollama_available
+        "version": "10.0.0",
+        "features": ["LLM Selection", "Morphological Search", "Partial Match", "Fallback"]
     }
 
 @app.get("/health", response_model=HealthResponse)
-async def health():
-    return HealthResponse(
-        status="healthy",
-        architecture="simple_answer_selection",
-        timestamp=datetime.now().isoformat(),
-        llm_available=simple_answer_client.ollama_available
-    )
-
-@app.get("/webapp", response_class=HTMLResponse)
-async def webapp():
-    """Telegram WebApp интерфейс"""
+async def health_check():
+    """Проверка здоровья системы"""
     try:
-        with open("webapp.html", "r", encoding="utf-8") as f:
-            html_content = f.read()
-        return HTMLResponse(content=html_content)
-    except FileNotFoundError:
-        return HTMLResponse(
-            content="<h1>WebApp не найден</h1><p>Файл webapp.html отсутствует</p>",
-            status_code=404
+        # Проверяем LLM
+        llm_available = False
+        try:
+            response = requests.get("http://127.0.0.1:11434/api/tags", timeout=2)
+            llm_available = response.status_code == 200
+        except:
+            pass
+        
+        return HealthResponse(
+            status="healthy",
+            timestamp=datetime.now().isoformat(),
+            llm_available=llm_available
         )
+    except Exception as e:
+        logger.error(f"❌ Health check failed: {e}")
+        raise HTTPException(status_code=500, detail="Health check failed")
 
 @app.post("/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest):
+async def chat_endpoint(request: ChatRequest):
     """Основной эндпоинт для чата"""
     try:
+        logger.info(f"📨 Получен вопрос: {request.text}")
+        
+        # Обрабатываем вопрос
         result = simple_answer_client.find_best_answer(request.text)
         
-        return ChatResponse(
+        # Формируем ответ
+        response = ChatResponse(
             response=result["answer"],
             intent=result["category"],
             confidence=result["confidence"],
@@ -288,21 +356,127 @@ async def chat(request: ChatRequest):
             timestamp=datetime.now().isoformat(),
             suggestions=[]
         )
-    
+        
+        logger.info(f"✅ Ответ отправлен: {result['source']}")
+        return response
+        
     except Exception as e:
-        logger.error(f"Ошибка в /chat: {e}")
-        return ChatResponse(
-            response="Извините, произошла ошибка при обработке вашего запроса.",
-            intent="error",
-            confidence=0.0,
-            source="error",
-            timestamp=datetime.now().isoformat(),
-            suggestions=[]
-        )
+        logger.error(f"❌ Ошибка обработки вопроса: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@app.get("/webapp", response_class=HTMLResponse)
+async def webapp():
+    """Telegram WebApp интерфейс"""
+    html_content = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>APARU Support</title>
+        <script src="https://telegram.org/js/telegram-web-app.js"></script>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f0f0f0; }
+            .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 10px; padding: 20px; }
+            .header { text-align: center; margin-bottom: 20px; }
+            .chat-container { height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; margin-bottom: 20px; }
+            .message { margin-bottom: 10px; padding: 10px; border-radius: 10px; }
+            .user-message { background: #007bff; color: white; margin-left: 20%; }
+            .bot-message { background: #f8f9fa; color: black; margin-right: 20%; }
+            .input-container { display: flex; gap: 10px; }
+            .input-field { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+            .send-button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+            .quick-buttons { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+            .quick-button { padding: 8px 16px; background: #e9ecef; border: 1px solid #ddd; border-radius: 20px; cursor: pointer; font-size: 14px; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>🚕 APARU Support</h1>
+                <p>Улучшенная система поддержки с морфологией</p>
+            </div>
+            
+            <div class="quick-buttons">
+                <button class="quick-button" onclick="sendQuickMessage('Что такое наценка?')">Наценка</button>
+                <button class="quick-button" onclick="sendQuickMessage('Как пополнить баланс?')">Баланс</button>
+                <button class="quick-button" onclick="sendQuickMessage('Что такое комфорт?')">Комфорт</button>
+                <button class="quick-button" onclick="sendQuickMessage('Как отменить заказ?')">Отмена</button>
+                <button class="quick-button" onclick="sendQuickMessage('Приложение не работает')">Приложение</button>
+            </div>
+            
+            <div class="chat-container" id="chatContainer">
+                <div class="message bot-message">
+                    <strong>APARU Support:</strong> Здравствуйте! Я помогу вам с вопросами по такси APARU. Задайте ваш вопрос или выберите быструю кнопку.
+                </div>
+            </div>
+            
+            <div class="input-container">
+                <input type="text" class="input-field" id="messageInput" placeholder="Задайте ваш вопрос..." onkeypress="handleKeyPress(event)">
+                <button class="send-button" onclick="sendMessage()">Отправить</button>
+            </div>
+        </div>
+
+        <script>
+            const chatContainer = document.getElementById('chatContainer');
+            const messageInput = document.getElementById('messageInput');
+            
+            function addMessage(text, isUser = false) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
+                messageDiv.innerHTML = `<strong>${isUser ? 'Вы:' : 'APARU Support:'}</strong> ${text}`;
+                chatContainer.appendChild(messageDiv);
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+            
+            async function sendMessage() {
+                const message = messageInput.value.trim();
+                if (!message) return;
+                
+                addMessage(message, true);
+                messageInput.value = '';
+                
+                try {
+                    const response = await fetch('/chat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            text: message,
+                            user_id: 'webapp_user',
+                            locale: 'ru'
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    addMessage(data.response);
+                    
+                } catch (error) {
+                    addMessage('Извините, произошла ошибка. Попробуйте еще раз.');
+                }
+            }
+            
+            function sendQuickMessage(message) {
+                messageInput.value = message;
+                sendMessage();
+            }
+            
+            function handleKeyPress(event) {
+                if (event.key === 'Enter') {
+                    sendMessage();
+                }
+            }
+            
+            // Инициализация Telegram WebApp
+            if (window.Telegram && window.Telegram.WebApp) {
+                window.Telegram.WebApp.ready();
+                window.Telegram.WebApp.expand();
+            }
+        </script>
+    </body>
+    </html>
+    """
+    return HTMLResponse(content=html_content)
 
 if __name__ == "__main__":
     import uvicorn
-    
-    # Railway использует переменную PORT
-    port = int(os.environ.get("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
