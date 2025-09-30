@@ -219,7 +219,8 @@ def search_faq(text: str) -> Optional[Dict[str, Any]]:
             confidence = result.get('confidence', 0)
             logger.info(f"🔍 Морфологический анализ: confidence={confidence:.2f}, intent={result.get('intent', 'unknown')}")
             
-            if result.get('matched_item') and confidence > 0.1:  # Еще больше понизили порог
+            # Понизили порог до минимума для стабильности
+            if result.get('matched_item') and confidence > 0.05:  # Минимальный порог
                 logger.info(f"✅ Морфологический поиск найден: {confidence:.2f}")
                 return result['matched_item']
             elif result.get('matched_item'):
@@ -228,10 +229,28 @@ def search_faq(text: str) -> Optional[Dict[str, Any]]:
             logger.error(f"❌ Ошибка морфологического анализа: {e}")
             import traceback
             traceback.print_exc()
+    else:
+        logger.warning("⚠️ Морфологический анализатор недоступен, используется простой поиск")
     
     # Fallback к простому поиску
     faq_items = kb_data.get("faq", [])
     text_lower = text.lower()
+    
+    # Предобработка сленговых выражений
+    slang_replacements = {
+        'че': 'что',
+        'там': '',
+        'по': '',
+        'как работает': 'как',
+        'работает': 'работа'
+    }
+    
+    processed_text = text_lower
+    for slang, replacement in slang_replacements.items():
+        processed_text = processed_text.replace(slang, replacement)
+    
+    # Убираем лишние пробелы
+    processed_text = ' '.join(processed_text.split())
     
     best_match = None
     best_score = 0
@@ -239,9 +258,9 @@ def search_faq(text: str) -> Optional[Dict[str, Any]]:
     for item in faq_items:
         score = 0
         
-        # Поиск по ключевым словам
+        # Поиск по ключевым словам (используем и оригинальный, и обработанный текст)
         keywords = item.get("keywords", [])
-        keyword_score = sum(1 for keyword in keywords if keyword in text_lower)
+        keyword_score = sum(1 for keyword in keywords if keyword in text_lower or keyword in processed_text)
         
         # Поиск по вариациям вопросов
         variations = item.get("question_variations", [])
@@ -249,12 +268,13 @@ def search_faq(text: str) -> Optional[Dict[str, Any]]:
         for variation in variations:
             variation_words = set(variation.lower().split())
             text_words = set(text_lower.split())
-            common_words = len(variation_words.intersection(text_words))
+            processed_words = set(processed_text.split())
+            common_words = len(variation_words.intersection(text_words)) + len(variation_words.intersection(processed_words))
             variation_score += common_words
         
         # Поиск по основному вопросу
         main_question = item.get("question", "").lower()
-        main_score = sum(1 for word in main_question.split() if word in text_lower)
+        main_score = sum(1 for word in main_question.split() if word in text_lower or word in processed_text)
         
         # Общий балл с весами
         score = (
