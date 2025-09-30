@@ -1,5 +1,6 @@
 import json
 import re
+import os
 import logging
 from typing import Dict, Any, List, Optional
 from datetime import datetime
@@ -10,7 +11,15 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from langdetect import detect
 from langdetect.lang_detect_exception import LangDetectException
-from llm_client import llm_client
+
+# Импорт улучшенного морфологического анализатора
+try:
+    from enhanced_morphological_analyzer import enhance_classification_with_morphology, enhanced_analyzer
+    MORPHOLOGY_AVAILABLE = True
+    print("✅ Улучшенный морфологический анализатор загружен")
+except ImportError:
+    MORPHOLOGY_AVAILABLE = False
+    print("⚠️ Морфологический анализатор недоступен")
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -197,9 +206,23 @@ def escalate_to_human(user_id: str, description: str) -> Dict[str, Any]:
         "message": f"Ваш запрос передан оператору. Номер тикета: {new_ticket['ticket_id']}"
     }
 
-# Поиск в FAQ
+# Улучшенный поиск в FAQ с морфологическим анализом
 def search_faq(text: str) -> Optional[Dict[str, Any]]:
-    """Ищет ответ в базе знаний FAQ"""
+    """Улучшенный поиск в базе знаний FAQ с морфологическим анализом"""
+    if not text or not kb_data:
+        return None
+    
+    # Используем улучшенный морфологический анализ
+    if MORPHOLOGY_AVAILABLE:
+        try:
+            result = enhance_classification_with_morphology(text, kb_data)
+            if result.get('matched_item') and result.get('confidence', 0) > 0.3:
+                logger.info(f"✅ Морфологический поиск найден: {result.get('confidence', 0):.2f}")
+                return result['matched_item']
+        except Exception as e:
+            logger.error(f"Ошибка морфологического анализа: {e}")
+    
+    # Fallback к простому поиску
     faq_items = kb_data.get("faq", [])
     text_lower = text.lower()
     
@@ -207,14 +230,39 @@ def search_faq(text: str) -> Optional[Dict[str, Any]]:
     best_score = 0
     
     for item in faq_items:
+        score = 0
+        
+        # Поиск по ключевым словам
         keywords = item.get("keywords", [])
-        score = sum(1 for keyword in keywords if keyword in text_lower)
+        keyword_score = sum(1 for keyword in keywords if keyword in text_lower)
+        
+        # Поиск по вариациям вопросов
+        variations = item.get("question_variations", [])
+        variation_score = 0
+        for variation in variations:
+            variation_words = set(variation.lower().split())
+            text_words = set(text_lower.split())
+            common_words = len(variation_words.intersection(text_words))
+            variation_score += common_words
+        
+        # Поиск по основному вопросу
+        main_question = item.get("question", "").lower()
+        main_score = sum(1 for word in main_question.split() if word in text_lower)
+        
+        # Общий балл с весами
+        score = (
+            keyword_score * 2.0 +           # Ключевые слова важнее
+            variation_score * 0.5 +         # Вариации вопросов
+            main_score * 1.0                # Основной вопрос
+        )
         
         if score > best_score:
             best_score = score
             best_match = item
     
-    if best_score > 0:
+    # Возвращаем результат только если балл достаточно высокий
+    if best_score >= 1.0:
+        logger.info(f"✅ Простой поиск найден: {best_score:.2f}")
         return best_match
     
     return None

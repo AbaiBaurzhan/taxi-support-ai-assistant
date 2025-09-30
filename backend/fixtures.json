@@ -1,0 +1,41 @@
+{
+  "rides": [
+    {
+      "id": "ride_001",
+      "user_id": "user_001",
+      "status": "completed",
+      "driver": "Иван Иванов",
+      "car": "Toyota Camry A123ABC",
+      "price": 850,
+      "distance": 5.2,
+      "duration": 15
+    }
+  ],
+  "receipts": [
+    {
+      "id": "receipt_001",
+      "user_id": "user_001",
+      "ride_id": "ride_001",
+      "amount": 850,
+      "date": "2024-01-15T10:30:00Z"
+    }
+  ],
+  "cards": [
+    {
+      "id": "card_001",
+      "user_id": "user_001",
+      "type": "Visa",
+      "last_four": "1234",
+      "is_primary": true
+    }
+  ],
+  "tickets": [
+    {
+      "id": "TKT_1001",
+      "user_id": "user_001",
+      "description": "Двойное списание средств",
+      "status": "open",
+      "created_at": "2024-01-15T10:30:00Z"
+    }
+  ]
+}
