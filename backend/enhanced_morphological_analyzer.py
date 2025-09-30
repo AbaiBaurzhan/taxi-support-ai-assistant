@@ -117,7 +117,7 @@ class EnhancedMorphologicalAnalyzer:
                 'наценка': ['коэффициент', 'доплата', 'надбавка', 'повышение', 'подорожание'],
                 'тариф': ['ставка', 'цена', 'стоимость', 'расценка'],
                 'комфорт': ['удобство', 'премиум', 'люкс'],
-                'доставка': ['перевозка', 'транспортировка', 'курьер'],
+                'доставка': ['перевозка', 'транспортировка', 'курьер', 'посылка', 'груз', 'грузоперевозка', 'доставка товаров', 'доставка груза'],
                 'водитель': ['шофер', 'таксист', 'перевозчик'],
                 'баланс': ['счет', 'средства', 'деньги'],
                 'моточасы': ['время', 'минуты', 'длительность'],
@@ -167,7 +167,7 @@ class EnhancedMorphologicalAnalyzer:
                 'тариф': [r'тариф', r'комфорт', r'класс', r'машин', r'премиум'],
                 'расценка': [r'расценк', r'стоимост', r'цен', r'таксометр', r'калькулятор'],
                 'предзаказ': [r'предварительн', r'заране', r'предзаказ', r'зарезервир'],
-                'доставка': [r'доставк', r'курьер', r'посылк', r'перевозк'],
+                'доставка': [r'доставк', r'курьер', r'посылк', r'перевозк', r'груз', r'грузоперевозк', r'транспортировк'],
                 'водитель': [r'водител', r'регистрац', r'заказ', r'баланс'],
                 'баланс': [r'баланс', r'пополнен', r'qiwi', r'kaspi', r'карт'],
                 'моточасы': [r'моточас', r'минут', r'времен', r'длительн'],
@@ -253,10 +253,15 @@ class EnhancedMorphologicalAnalyzer:
             # Добавляем синонимы
             if language in self.synonyms:
                 for base_word, synonyms in self.synonyms[language].items():
-                    if stem == base_word or word == base_word:
+                    if stem == base_word or word == base_word or base_word in word or word in base_word:
                         for synonym in synonyms:
                             expanded.add(synonym)
                             expanded.add(self.get_word_stem(synonym, language))
+                            # Добавляем части синонимов для лучшего сопоставления
+                            if ' ' in synonym:
+                                for part in synonym.split():
+                                    expanded.add(part)
+                                    expanded.add(self.get_word_stem(part, language))
         
         return list(expanded)
     
@@ -360,6 +365,22 @@ def enhance_classification_with_morphology(query: str, kb_data: Dict[str, Any]) 
         # Извлекаем ключевые слова из запроса
         query_keywords = enhanced_analyzer.extract_keywords(query, language)
         
+        # Для коротких запросов добавляем дополнительные варианты
+        if len(query.strip()) < 20:  # Короткие запросы
+            query_words = query.lower().strip().split()
+            for word in query_words:
+                if len(word) > 3:  # Только значимые слова
+                    query_keywords.append(word)
+                    query_keywords.append(enhanced_analyzer.get_word_stem(word, language))
+                    
+                    # Добавляем синонимы для коротких запросов
+                    if language in enhanced_analyzer.synonyms:
+                        for base_word, synonyms in enhanced_analyzer.synonyms[language].items():
+                            if word == base_word or enhanced_analyzer.get_word_stem(word, language) == base_word:
+                                for synonym in synonyms:
+                                    query_keywords.append(synonym)
+                                    query_keywords.append(enhanced_analyzer.get_word_stem(synonym, language))
+        
         # Ищем лучшее совпадение
         for item in faq_items:
             score = 0.0
@@ -393,7 +414,7 @@ def enhance_classification_with_morphology(query: str, kb_data: Dict[str, Any]) 
                 best_match = item
         
         # Возвращаем результат
-        if best_match and best_score > 0.3:  # Порог для определения совпадения
+        if best_match and best_score > 0.1:  # Понизили порог для лучшего распознавания
             return {
                 'intent': 'faq',
                 'confidence': min(best_score, 1.0),

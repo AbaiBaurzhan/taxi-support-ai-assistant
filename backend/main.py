@@ -216,11 +216,18 @@ def search_faq(text: str) -> Optional[Dict[str, Any]]:
     if MORPHOLOGY_AVAILABLE:
         try:
             result = enhance_classification_with_morphology(text, kb_data)
-            if result.get('matched_item') and result.get('confidence', 0) > 0.3:
-                logger.info(f"✅ Морфологический поиск найден: {result.get('confidence', 0):.2f}")
+            confidence = result.get('confidence', 0)
+            logger.info(f"🔍 Морфологический анализ: confidence={confidence:.2f}, intent={result.get('intent', 'unknown')}")
+            
+            if result.get('matched_item') and confidence > 0.1:  # Еще больше понизили порог
+                logger.info(f"✅ Морфологический поиск найден: {confidence:.2f}")
                 return result['matched_item']
+            elif result.get('matched_item'):
+                logger.info(f"⚠️ Морфологический поиск найден, но низкая уверенность: {confidence:.2f}")
         except Exception as e:
-            logger.error(f"Ошибка морфологического анализа: {e}")
+            logger.error(f"❌ Ошибка морфологического анализа: {e}")
+            import traceback
+            traceback.print_exc()
     
     # Fallback к простому поиску
     faq_items = kb_data.get("faq", [])
