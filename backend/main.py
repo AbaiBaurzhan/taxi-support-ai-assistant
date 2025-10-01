@@ -82,8 +82,18 @@ kb_data = load_json_file("kb.json")
 
 # Убеждаемся что fixtures - это словарь
 if isinstance(fixtures, list):
-    fixtures = {"rides": {}, "receipts": {}, "cards": {}, "tickets": {"next_id": 1001}}
-    print("⚠️ fixtures.json загружен как список, используется пустая структура")
+    # Если fixtures загружен как список, создаем правильную структуру
+    fixtures = {
+        "rides": fixtures,  # Используем список как есть
+        "receipts": [], 
+        "cards": [], 
+        "tickets": {"next_id": 1001}
+    }
+    print("⚠️ fixtures.json загружен как список, преобразован в правильную структуру")
+elif not isinstance(fixtures, dict):
+    # Если fixtures не словарь и не список, создаем пустую структуру
+    fixtures = {"rides": [], "receipts": [], "cards": [], "tickets": {"next_id": 1001}}
+    print("⚠️ fixtures.json имеет неожиданный формат, создана пустая структура")
 
 # Убеждаемся что kb_data - это словарь  
 if isinstance(kb_data, list):
@@ -130,15 +140,21 @@ def classify_intent(text: str) -> tuple[str, float]:
     """Классифицирует запрос пользователя"""
     text_lower = text.lower()
     
+    # Специальная логика для предварительного заказа - проверяем в первую очередь
+    if any(phrase in text_lower for phrase in ['предварительный заказ', 'предзаказ', 'заранее', 'зарезервировать']):
+        return 'faq', 0.9  # Сразу возвращаем FAQ с высокой уверенностью
+    
     # FAQ интенты
     faq_keywords = ['цена', 'стоимость', 'тариф', 'расчет', 'сколько стоит', 
                    'промокод', 'скидка', 'промо', 'код', 'ввести',
                    'отменить', 'отмена', 'отказ',
                    'связаться', 'позвонить', 'водитель', 'контакт',
-                   'не приехал', 'опоздал', 'ждать', 'проблема']
+                   'не приехал', 'опоздал', 'ждать', 'проблема',
+                   'предварительный заказ', 'предзаказ', 'заранее', 'время',
+                   'зарезервировать', 'вызов', 'назначить время']
     
-    # Статус поездки
-    ride_status_keywords = ['где водитель', 'статус', 'поездка', 'заказ', 'ожидание']
+    # Статус поездки (исключаем "заказ" чтобы не конфликтовать с предзаказом)
+    ride_status_keywords = ['где водитель', 'статус', 'поездка', 'ожидание']
     
     # Чек
     receipt_keywords = ['чек', 'квитанция', 'документ', 'справка']
@@ -155,6 +171,7 @@ def classify_intent(text: str) -> tuple[str, float]:
     receipt_score = sum(1 for keyword in receipt_keywords if keyword in text_lower)
     cards_score = sum(1 for keyword in cards_keywords if keyword in text_lower)
     complaint_score = sum(1 for keyword in complaint_keywords if keyword in text_lower)
+    
     
     scores = {
         'faq': faq_score,
