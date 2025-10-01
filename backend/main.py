@@ -80,6 +80,16 @@ def load_json_file(filename: str) -> Dict[str, Any]:
 fixtures = load_json_file("fixtures.json")
 kb_data = load_json_file("kb.json")
 
+# Убеждаемся что fixtures - это словарь
+if isinstance(fixtures, list):
+    fixtures = {"rides": {}, "receipts": {}, "cards": {}, "tickets": {"next_id": 1001}}
+    print("⚠️ fixtures.json загружен как список, используется пустая структура")
+
+# Убеждаемся что kb_data - это словарь  
+if isinstance(kb_data, list):
+    kb_data = {"faq": []}
+    print("⚠️ kb.json загружен как список, используется пустая структура")
+
 # Предобработка текста
 def preprocess_text(text: str) -> str:
     """Убирает эмодзи и спецсимволы"""
@@ -167,15 +177,20 @@ def classify_intent(text: str) -> tuple[str, float]:
 # Моки для такси
 def get_ride_status(user_id: str) -> Dict[str, Any]:
     """Получает статус поездки пользователя"""
-    user_rides = fixtures.get("rides", {}).get(user_id, {})
+    rides = fixtures.get("rides", [])
+    user_rides = [ride for ride in rides if ride.get("user_id") == user_id]
+    
     if not user_rides:
         return {"status": "no_rides", "message": "У вас нет активных поездок"}
     
-    return user_rides
+    # Возвращаем последнюю поездку
+    return user_rides[-1]
 
 def send_receipt(user_id: str) -> Dict[str, Any]:
     """Отправляет чек пользователю"""
-    user_receipts = fixtures.get("receipts", {}).get(user_id, [])
+    receipts = fixtures.get("receipts", [])
+    user_receipts = [receipt for receipt in receipts if receipt.get("user_id") == user_id]
+    
     if not user_receipts:
         return {"status": "no_receipts", "message": "У вас нет чеков для отправки"}
     
@@ -188,7 +203,9 @@ def send_receipt(user_id: str) -> Dict[str, Any]:
 
 def list_cards(user_id: str) -> Dict[str, Any]:
     """Получает список карт пользователя"""
-    user_cards = fixtures.get("cards", {}).get(user_id, [])
+    cards = fixtures.get("cards", [])
+    user_cards = [card for card in cards if card.get("user_id") == user_id]
+    
     if not user_cards:
         return {"status": "no_cards", "message": "У вас нет привязанных карт"}
     
