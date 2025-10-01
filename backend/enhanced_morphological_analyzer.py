@@ -365,6 +365,14 @@ def enhance_classification_with_morphology(query: str, kb_data: Dict[str, Any]) 
         # Извлекаем ключевые слова из запроса
         query_keywords = enhanced_analyzer.extract_keywords(query, language)
         
+        # Автоматическое дополнение коротких запросов
+        original_query = query
+        if len(query.strip().split()) == 1 and len(query.strip()) > 3:
+            # Если запрос состоит из одного слова, добавляем "что такое"
+            if not any(word in query.lower() for word in ['как', 'что', 'где', 'когда', 'почему', 'зачем']):
+                query = f"что такое {query}"
+                logger.info(f"🔄 Морфологическое дополнение: '{original_query}' → '{query}'")
+        
         # Для коротких запросов добавляем дополнительные варианты
         if len(query.strip()) < 20:  # Короткие запросы
             query_words = query.lower().strip().split()
@@ -408,9 +416,27 @@ def enhance_classification_with_morphology(query: str, kb_data: Dict[str, Any]) 
                 main_score = enhanced_analyzer.match_keywords(query_keywords, main_keywords)
                 score += main_score * 0.2
             
+            # КОНТЕКСТНАЯ ПРОВЕРКА для лучшего различения
+            question_text = item.get('question', '').lower()
+            context_bonus = 0
+            
+            # Проверяем соответствие контекста
+            if 'как работает' in query.lower() and 'как работает' in question_text:
+                context_bonus += 0.3
+            elif 'как работает' in query.lower() and 'что такое' in question_text:
+                context_bonus -= 0.2  # Штраф за несоответствие
+            
+            if 'что такое' in query.lower() and 'что такое' in question_text:
+                context_bonus += 0.3
+            elif 'что такое' in query.lower() and 'как работает' in question_text:
+                context_bonus -= 0.2  # Штраф за несоответствие
+            
+            # Применяем контекстный бонус
+            final_score = score + context_bonus
+            
             # Обновляем лучшее совпадение
-            if score > best_score:
-                best_score = score
+            if final_score > best_score:
+                best_score = final_score
                 best_match = item
         
         # Возвращаем результат
