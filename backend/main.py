@@ -144,32 +144,54 @@ def classify_intent(text: str) -> tuple[str, float]:
     if any(phrase in text_lower for phrase in ['предварительный заказ', 'предзаказ', 'заранее', 'зарезервировать']):
         return 'faq', 0.9  # Сразу возвращаем FAQ с высокой уверенностью
     
-    # FAQ интенты
+    # Специальная логика для исключения конфликтующих слов
+    # Если запрос содержит специфичные FAQ слова, приоритизируем FAQ
+    specific_faq_words = ['наценка', 'доплата', 'расценка', 'доставка', 'моточасы', 'баланс', 'приложение']
+    if any(word in text_lower for word in specific_faq_words):
+        # Добавляем большой бонус для FAQ и обнуляем cards
+        faq_bonus = 10
+        cards_penalty = -10  # Штраф для cards
+    else:
+        faq_bonus = 0
+        cards_penalty = 0
+    
+    # FAQ интенты (включаем все ключевые слова из базы знаний)
     faq_keywords = ['цена', 'стоимость', 'тариф', 'расчет', 'сколько стоит', 
                    'промокод', 'скидка', 'промо', 'код', 'ввести',
                    'отменить', 'отмена', 'отказ',
                    'связаться', 'позвонить', 'водитель', 'контакт',
                    'не приехал', 'опоздал', 'ждать', 'проблема',
                    'предварительный заказ', 'предзаказ', 'заранее', 'время',
-                   'зарезервировать', 'вызов', 'назначить время']
+                   'зарезервировать', 'вызов', 'назначить время',
+                   # Добавляем все ключевые слова из FAQ
+                   'наценка', 'коэффициент', 'доплата', 'надбавка', 'спрос', 'повышенный спрос', 'подорожание',
+                   'комфорт', 'класс', 'машина', 'премиум', 'камри', 'дороже', 'удобство',
+                   'расценка', 'таксометр', 'калькулятор', 'предварительно', 'оценка',
+                   'доставка', 'заказ', 'курьер', 'посылка', 'откуда', 'куда', 'телефон', 'получатель',
+                   'регистрация', 'заказы', 'лента заказов', 'баланс', 'id', 'клиент', 'пробный',
+                   'пополнение', 'qiwi', 'cyberplat', 'касса24', 'единица', 'kaspi', 'visa', 'mastercard',
+                   'моточасы', 'минуты', 'поездка', 'время', 'тариф', 'длительные заказы',
+                   'ожидание', 'поехали', 'остановить', 'заказ выполнен', 'клиент', 'адрес',
+                   'приложение', 'не работает', 'обновление', 'google play', 'app store', 'gps', 'вылетает', 'зависает',
+                   'работает', 'груз', 'отправить', 'расстояние', 'товары', 'документы']
     
-    # Статус поездки (исключаем "заказ" чтобы не конфликтовать с предзаказом)
-    ride_status_keywords = ['где водитель', 'статус', 'поездка', 'ожидание']
+    # Статус поездки (только специфичные слова)
+    ride_status_keywords = ['где водитель', 'статус поездки', 'активные поездки']
     
-    # Чек
-    receipt_keywords = ['чек', 'квитанция', 'документ', 'справка']
+    # Чек (только специфичные слова)
+    receipt_keywords = ['чек', 'квитанция', 'документ', 'справка', 'отправить чек']
     
-    # Карты
-    cards_keywords = ['карта', 'карты', 'основная', 'платеж', 'оплата']
+    # Карты (только специфичные слова, исключаем "оплата" и "доплата")
+    cards_keywords = ['карта', 'карты', 'основная карта', 'привязать карту', 'основная']
     
     # Жалобы
-    complaint_keywords = ['списали дважды', 'двойное списание', 'жалоба', 'проблема', 'неправильно']
+    complaint_keywords = ['списали дважды', 'двойное списание', 'жалоба', 'неправильно списали']
     
     # Подсчет совпадений
-    faq_score = sum(1 for keyword in faq_keywords if keyword in text_lower)
+    faq_score = sum(1 for keyword in faq_keywords if keyword in text_lower) + faq_bonus
     ride_score = sum(1 for keyword in ride_status_keywords if keyword in text_lower)
     receipt_score = sum(1 for keyword in receipt_keywords if keyword in text_lower)
-    cards_score = sum(1 for keyword in cards_keywords if keyword in text_lower)
+    cards_score = sum(1 for keyword in cards_keywords if keyword in text_lower) + cards_penalty
     complaint_score = sum(1 for keyword in complaint_keywords if keyword in text_lower)
     
     
@@ -270,6 +292,15 @@ def search_with_three_filters(query: str, faq_items: List[Dict]) -> List[tuple]:
     query_words = re.sub(r'[^\w\s]', ' ', query_lower).split()
     query_words = [word for word in query_words if len(word) > 2]
     
+    # Специальная логика для исключения конфликтующих FAQ
+    # Если запрос содержит специфичные слова, исключаем конфликтующие FAQ
+    if 'расценка' in query_lower:
+        # Для "расценка" исключаем FAQ о наценке
+        faq_items = [item for item in faq_items if 'наценк' not in item.get('question', '').lower()]
+    elif 'наценка' in query_lower or 'доплата' in query_lower:
+        # Для "наценка" и "доплата" исключаем FAQ о расценке
+        faq_items = [item for item in faq_items if 'расценк' not in item.get('question', '').lower()]
+    
     for item in faq_items:
         # Filter 1: Question Variations (приоритет 0.5)
         variations_score = search_question_variations(query_lower, item.get("question_variations", []))
@@ -335,43 +366,77 @@ def search_question_variations(query: str, variations: List[str]) -> float:
 
 
 def search_keywords(query_words: List[str], keywords: List[str]) -> float:
-    """Filter 2: Поиск по ключевым словам с морфологией"""
+    """Filter 2: Улучшенный поиск по ключевым словам с приоритизацией"""
     if not query_words or not keywords:
         return 0.0
     
+    # Специальные приоритеты для ключевых слов
+    priority_keywords = {
+        # Высокий приоритет - уникальные слова
+        'наценка': 15, 'коэффициент': 15, 'доплата': 15, 'надбавка': 15, 'спрос': 15, 'повышенный спрос': 15, 'подорожание': 15,
+        'комфорт': 15, 'камри': 15, 'премиум': 15, 'класс': 15, 'машина': 15, 'дороже': 15, 'удобство': 15,
+        'моточасы': 15, 'минуты': 15, 'поездка': 15, 'время': 15, 'длительные заказы': 15,
+        'баланс': 15, 'пополнение': 15, 'qiwi': 15, 'cyberplat': 15, 'касса24': 15, 'единица': 15, 'kaspi': 15, 'visa': 15, 'mastercard': 15,
+        'приложение': 15, 'google play': 15, 'app store': 15, 'gps': 15, 'вылетает': 15, 'зависает': 15,
+        'водитель': 15, 'регистрация': 15, 'лента заказов': 15, 'заказы': 15, 'id': 15, 'клиент': 15, 'пробный': 15,
+        
+        # Очень высокий приоритет - уникальные слова для расценки
+        'расценка': 20, 'таксометр': 20, 'калькулятор': 20, 'предварительно': 20, 'оценка': 20,
+        
+        # Высокий приоритет - специфичные слова
+        'доставка': 15, 'курьер': 15, 'посылка': 15, 'отправить': 15, 'заказ': 15, 'откуда': 15, 'куда': 15, 'телефон': 15, 'получатель': 15,
+        'предварительный заказ': 15, 'предзаказ': 15, 'заранее': 15,
+        'ожидание': 15, 'поехали': 15, 'остановить': 15, 'заказ выполнен': 15, 'клиент': 15, 'адрес': 15,
+        'работает': 15, 'груз': 15, 'расстояние': 15, 'товары': 15, 'документы': 15,
+        
+        # Низкий приоритет - общие слова (могут конфликтовать)
+        'цена': 3, 'стоимость': 3, 'тариф': 3
+    }
+    
     total_score = 0.0
-    max_possible = len(keywords) * 8  # Максимум баллов за ключевые слова
+    max_possible = len(keywords) * 20  # Максимум баллов за ключевые слова
     
     for keyword in keywords:
-        keyword_lower = keyword.lower()
+        keyword_lower = keyword.lower().strip()
         keyword_root = extract_word_root(keyword_lower)
         max_similarity = 0
         
+        # Получаем приоритет ключевого слова
+        keyword_priority = priority_keywords.get(keyword_lower, 5)  # По умолчанию 5
+        
         for word in query_words:
+            word_lower = word.lower().strip()
+            
+            # Точное совпадение ключевого слова
+            if word_lower == keyword_lower:
+                total_score += keyword_priority
+                max_similarity = 1.0
+                continue
+            
             # Вычисляем схожесть с ключевым словом
-            similarity = calculate_word_similarity(word, keyword_lower)
+            similarity = calculate_word_similarity(word_lower, keyword_lower)
             max_similarity = max(max_similarity, similarity)
             
             # Дополнительная проверка с корнем
-            word_root = extract_word_root(word)
+            word_root = extract_word_root(word_lower)
             root_similarity = calculate_word_similarity(word_root, keyword_root)
             max_similarity = max(max_similarity, root_similarity)
         
-        # Конвертируем схожесть в баллы
+        # Конвертируем схожесть в баллы с учетом приоритета
         if max_similarity >= 1.0:      # Точное совпадение
-            total_score += 8
+            total_score += keyword_priority
         elif max_similarity >= 0.9:    # Совпадение корней
-            total_score += 7
+            total_score += keyword_priority * 0.9
         elif max_similarity >= 0.8:    # Частичное совпадение корней
-            total_score += 6
+            total_score += keyword_priority * 0.8
         elif max_similarity >= 0.7:    # Хорошая схожесть
-            total_score += 5
+            total_score += keyword_priority * 0.7
         elif max_similarity >= 0.6:    # Умеренная схожесть
-            total_score += 3
+            total_score += keyword_priority * 0.5
         elif max_similarity >= 0.5:    # Слабая схожесть
-            total_score += 2
+            total_score += keyword_priority * 0.3
         elif max_similarity >= 0.4:    # Минимальная схожесть
-            total_score += 1
+            total_score += keyword_priority * 0.1
     
     return total_score / max_possible if max_possible > 0 else 0.0
 
