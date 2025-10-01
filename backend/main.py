@@ -296,6 +296,87 @@ def search_faq(text: str) -> Optional[Dict[str, Any]]:
         keywords = item.get("keywords", [])
         keyword_score = 0
         
+        def calculate_word_similarity(word1, word2):
+            """Вычисляет семантическую схожесть между словами"""
+            if not word1 or not word2:
+                return 0
+            
+            # Нормализуем слова
+            w1, w2 = word1.lower(), word2.lower()
+            
+            # Точное совпадение
+            if w1 == w2:
+                return 1.0
+            
+            # Извлекаем корни
+            root1, root2 = extract_word_root(w1), extract_word_root(w2)
+            if root1 == root2:
+                return 0.9
+            
+            # Частичное совпадение корней
+            if len(root1) >= 4 and len(root2) >= 4:
+                common_len = 0
+                min_len = min(len(root1), len(root2))
+                for i in range(min_len):
+                    if root1[i] == root2[i]:
+                        common_len += 1
+                    else:
+                        break
+                
+                if common_len >= 4:
+                    return 0.7 + (common_len / min_len) * 0.2
+            
+            # Левенштейн расстояние для опечаток
+            def levenshtein_distance(s1, s2):
+                if len(s1) < len(s2):
+                    return levenshtein_distance(s2, s1)
+                if len(s2) == 0:
+                    return len(s1)
+                
+                previous_row = list(range(len(s2) + 1))
+                for i, c1 in enumerate(s1):
+                    current_row = [i + 1]
+                    for j, c2 in enumerate(s2):
+                        insertions = previous_row[j + 1] + 1
+                        deletions = current_row[j] + 1
+                        substitutions = previous_row[j] + (c1 != c2)
+                        current_row.append(min(insertions, deletions, substitutions))
+                    previous_row = current_row
+                
+                return previous_row[-1]
+            
+            # Проверяем опечатки
+            if len(w1) >= 3 and len(w2) >= 3:
+                distance = levenshtein_distance(w1, w2)
+                max_len = max(len(w1), len(w2))
+                similarity = 1 - (distance / max_len)
+                
+                if similarity > 0.6:  # 60% схожести
+                    return similarity * 0.5
+            
+            # Фонетическая схожесть
+            phonetic_map = {
+                'к': ['г', 'х', 'к'], 'п': ['б', 'п'], 'т': ['д', 'т'],
+                'с': ['з', 'ц', 'с'], 'ф': ['в', 'ф'], 'ш': ['щ', 'ж', 'ш'],
+                'ч': ['щ', 'ч'], 'р': ['р', 'л'], 'л': ['р', 'л']
+            }
+            
+            if len(w1) >= 3 and len(w2) >= 3:
+                phonetic_score = 0
+                min_len = min(len(w1), len(w2))
+                
+                for i in range(min_len):
+                    if w1[i] == w2[i]:
+                        phonetic_score += 1
+                    elif w1[i] in phonetic_map.get(w2[i], []) or w2[i] in phonetic_map.get(w1[i], []):
+                        phonetic_score += 0.7
+                
+                phonetic_similarity = phonetic_score / min_len
+                if phonetic_similarity > 0.7:
+                    return phonetic_similarity * 0.4
+            
+            return 0
+        
         def extract_word_root(word):
             """Извлекает корень слова, убирая окончания, суффиксы и приставки"""
             if len(word) < 4:
@@ -358,33 +439,52 @@ def search_faq(text: str) -> Optional[Dict[str, Any]]:
         for keyword in keywords:
             keyword_lower = keyword.lower()
             keyword_root = extract_word_root(keyword_lower)
+            max_similarity = 0
             
-            # 1. Точное совпадение (высший балл)
-            if keyword_lower in text_cleaned:
-                keyword_score += 6
-                continue
-            
-            # 2. Поиск по корню слова (stemming) - ГЛАВНЫЙ АЛГОРИТМ
-            found_by_root = False
+            # УЛЬТРА-ПРОДВИНУТЫЙ поиск по всем словам запроса
             for word in text_cleaned.split():
+                if len(word) < 3:  # Пропускаем короткие слова
+                    continue
+                
+                # Вычисляем схожесть с ключевым словом
+                similarity = calculate_word_similarity(word, keyword_lower)
+                max_similarity = max(max_similarity, similarity)
+                
+                # Дополнительная проверка с корнем
                 word_root = extract_word_root(word)
-                
-                # Точное совпадение корней
-                if keyword_root == word_root:
-                    keyword_score += 5
-                    found_by_root = True
-                    break
-                
-                # Частичное совпадение корней (минимум 4 символа)
-                if len(keyword_root) >= 4 and len(word_root) >= 4:
-                    min_len = min(len(keyword_root), len(word_root))
-                    if keyword_root[:min_len] == word_root[:min_len] and min_len >= 4:
-                        keyword_score += 4
-                        found_by_root = True
-                        break
+                root_similarity = calculate_word_similarity(word_root, keyword_root)
+                max_similarity = max(max_similarity, root_similarity)
             
-            if found_by_root:
-                continue
+            # Конвертируем схожесть в баллы
+            if max_similarity >= 1.0:      # Точное совпадение
+                keyword_score += 8
+            elif max_similarity >= 0.9:    # Совпадение корней
+                keyword_score += 7
+            elif max_similarity >= 0.8:    # Частичное совпадение корней
+                keyword_score += 6
+            elif max_similarity >= 0.7:    # Хорошая схожесть
+                keyword_score += 5
+            elif max_similarity >= 0.6:    # Умеренная схожесть
+                keyword_score += 3
+            elif max_similarity >= 0.5:    # Слабая схожесть
+                keyword_score += 2
+            elif max_similarity >= 0.4:    # Минимальная схожесть
+                keyword_score += 1
+            
+            # Дополнительные бонусы за контекст
+            if max_similarity > 0:
+                # Бонус за множественные совпадения
+                word_count = text_cleaned.count(keyword_lower)
+                if word_count > 1:
+                    keyword_score += word_count * 0.5
+                
+                # Бонус за позицию слова (начало важнее)
+                words = text_cleaned.split()
+                for i, word in enumerate(words):
+                    if calculate_word_similarity(word, keyword_lower) > 0.7:
+                        position_bonus = 1.0 - (i / len(words)) * 0.5
+                        keyword_score += position_bonus * 0.5
+                        break
             
             # 3. Поиск по всем формам слова (морфологические вариации)
             keyword_forms = [
@@ -407,47 +507,54 @@ def search_faq(text: str) -> Optional[Dict[str, Any]]:
                     found_by_root = True
                     break
             
-            if found_by_root:
-                continue
+            # Переходим к следующему ключевому слову
             
-            # 4. Частичное совпадение (подстрока)
-            if keyword_lower in text_lower or keyword_lower in processed_text:
-                keyword_score += 2
-                continue
-            
-            # 5. Обратное частичное совпадение (запрос в ключевом слове)
-            for word in text_cleaned.split():
-                if len(word) > 3 and word in keyword_lower:
-                    keyword_score += 2
-                    break
-            
-            # 6. Фонетический поиск (похожие звуки)
-            phonetic_map = {
-                'к': ['г', 'х'],
-                'п': ['б'],
-                'т': ['д'],
-                'с': ['з', 'ц'],
-                'ф': ['в'],
-                'ш': ['щ', 'ж'],
-                'ч': ['щ']
+            # СЕМАНТИЧЕСКИЙ поиск по расширенным синонимам
+            extended_synonyms = {
+                'доставка': ['доставка', 'доставки', 'доставлять', 'доставщик', 'доставщица', 
+                           'курьер', 'курьерская', 'посылка', 'перевозка', 'транспортировка',
+                           'груз', 'грузоперевозка', 'логистика', 'отправка', 'получение'],
+                'цена': ['цена', 'цены', 'стоимость', 'тариф', 'расценка', 'прайс', 'прейскурант',
+                        'себестоимость', 'стоит', 'стоить', 'плата', 'оплата', 'деньги'],
+                'карта': ['карта', 'карты', 'карточка', 'пластик', 'платеж', 'банковская',
+                         'кредитка', 'дебетка', 'сбербанк', 'visa', 'mastercard'],
+                'баланс': ['баланс', 'счет', 'счета', 'деньги', 'средства', 'капитал', 'финансы',
+                          'наличка', 'наличные', 'копейки', 'рубли', 'тенге'],
+                'водитель': ['водитель', 'водители', 'шофер', 'таксист', 'перевозчик', 'машинист',
+                            'управляющий', 'кондуктор', 'пилот'],
+                'заказ': ['заказ', 'заказы', 'заказывать', 'заказать', 'покупка', 'бронирование',
+                         'резервирование', 'требование', 'просьба', 'заявка']
             }
             
-            for word in text_cleaned.split():
-                word_root = extract_word_root(word)
-                if len(word_root) >= 4 and len(keyword_root) >= 4:
-                    # Проверяем фонетическое сходство корней
-                    similarity_count = 0
-                    min_len = min(len(word_root), len(keyword_root))
-                    
-                    for i in range(min_len):
-                        if word_root[i] == keyword_root[i]:
-                            similarity_count += 1
-                        elif word_root[i] in phonetic_map.get(keyword_root[i], []):
-                            similarity_count += 0.5
-                    
-                    if similarity_count >= min_len * 0.7:  # 70% сходства
-                        keyword_score += 1.5
-                        break
+            # Проверяем синонимы для ключевого слова
+            if keyword_lower in extended_synonyms:
+                for synonym in extended_synonyms[keyword_lower]:
+                    for word in text_cleaned.split():
+                        if len(word) >= 3:
+                            synonym_similarity = calculate_word_similarity(word, synonym)
+                            if synonym_similarity > 0.7:
+                                keyword_score += synonym_similarity * 3
+                                break
+            
+            # ДОПОЛНИТЕЛЬНЫЙ контекстный поиск
+            # Проверяем связанные понятия
+            related_concepts = {
+                'доставка': ['адрес', 'получатель', 'отправитель', 'посылка', 'пакет', 'товар'],
+                'цена': ['дешево', 'дорого', 'скидка', 'промокод', 'акция', 'распродажа'],
+                'карта': ['привязать', 'привязка', 'оплата', 'списание', 'пополнение'],
+                'баланс': ['пополнить', 'пополнение', 'списать', 'списание', 'история'],
+                'водитель': ['машина', 'автомобиль', 'такси', 'поездка', 'маршрут'],
+                'заказ': ['сделать', 'оформить', 'отменить', 'изменить', 'статус']
+            }
+            
+            if keyword_lower in related_concepts:
+                for concept in related_concepts[keyword_lower]:
+                    for word in text_cleaned.split():
+                        if len(word) >= 3:
+                            concept_similarity = calculate_word_similarity(word, concept)
+                            if concept_similarity > 0.8:
+                                keyword_score += concept_similarity * 2
+                                break
         
         # ГЛУБОКИЙ поиск по вариациям вопросов
         variations = item.get("question_variations", [])
@@ -504,9 +611,6 @@ def search_faq(text: str) -> Optional[Dict[str, Any]]:
                 main_score += 0.5
         
         # 3. Поиск по порядку слов (важность контекста)
-        query_words_set = set(query_words)
-        question_words_set = set(main_question_words)
-        
         # Пересечение слов с учетом порядка
         ordered_matches = 0
         for i, word in enumerate(query_words):
@@ -527,20 +631,34 @@ def search_faq(text: str) -> Optional[Dict[str, Any]]:
             if word in text_cleaned and word in main_question:
                 main_score += 1.0  # Высокий бонус за важные слова
         
-        # Нормализация баллов для нового алгоритма
-        max_possible_keywords = len(keywords) * 5  # Максимум баллов за ключевые слова (новый алгоритм)
+        # УЛЬТРА-ПРОДВИНУТАЯ нормализация баллов
+        max_possible_keywords = len(keywords) * 8  # Максимум баллов за ключевые слова (новый алгоритм)
         normalized_keyword_score = keyword_score / max_possible_keywords if max_possible_keywords > 0 else 0
         
-        # Общий балл с улучшенными весами
+        # Общий балл с максимально улучшенными весами
         score = (
-            normalized_keyword_score * 6.0 +    # Ключевые слова = самые важные (увеличено)
-            variation_score * 1.5 +             # Вариации вопросов (увеличено)
-            main_score * 3.0                    # Основной вопрос (увеличено)
+            normalized_keyword_score * 10.0 +   # Ключевые слова = максимальная важность
+            variation_score * 2.0 +             # Вариации вопросов (увеличено)
+            main_score * 4.0                    # Основной вопрос (увеличено)
         )
         
-        # Бонус за комплексное совпадение
+        # МНОЖЕСТВЕННЫЕ бонусы за комплексное совпадение
+        bonus_multiplier = 1.0
+        
         if keyword_score > 0 and variation_score > 0 and main_score > 0:
-            score *= 1.2  # 20% бонус за совпадение по всем трем критериям
+            bonus_multiplier *= 1.3  # 30% бонус за совпадение по всем трем критериям
+        
+        if keyword_score > len(keywords) * 5:  # Высокий балл за ключевые слова
+            bonus_multiplier *= 1.2  # Дополнительный 20% бонус
+        
+        if variation_score > 2.0:  # Хорошие вариации
+            bonus_multiplier *= 1.1  # Дополнительный 10% бонус
+        
+        score *= bonus_multiplier
+        
+        # ФИНАЛЬНЫЙ бонус за качество совпадения
+        if score > 5.0:  # Очень высокий общий балл
+            score += 1.0  # Абсолютный бонус
         
         if score > best_score:
             best_score = score
@@ -587,8 +705,8 @@ async def chat(request: ChatRequest):
             confidence = 0.9
         else:
             # Если не найден в FAQ, используем LLM
-            prompt = llm_client.create_taxi_context_prompt(processed_text, intent, final_locale)
-            response_text = llm_client.generate_response(prompt)
+            # LLM отключен
+            response_text = "Извините, я не нашел подходящий ответ в базе знаний."
     
     elif intent == "ride_status":
         ride_data = get_ride_status(request.user_id)
@@ -625,8 +743,8 @@ async def chat(request: ChatRequest):
     
     else:
         # Для неизвестных интентов используем LLM
-        prompt = llm_client.create_taxi_context_prompt(processed_text, intent, final_locale)
-        response_text = llm_client.generate_response(prompt)
+        # LLM отключен
+        response_text = "Извините, я не нашел подходящий ответ в базе знаний."
     
     # Логирование
     logger.info(f"Response: {response_text[:100]}..., Source: {source}, Intent: {intent}, Confidence: {confidence}")
